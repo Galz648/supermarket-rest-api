@@ -13,7 +13,8 @@ model Item {
     unit     String
     category String
     brand    String
-    prices   Price[]
+    prices   ItemPrice[]
+
 }
 
 model Chain {
@@ -28,15 +29,15 @@ model Store {
     chain    Chain   @relation(fields: [chainId], references: [id])
     chainId  String  @db.ObjectId
     location String
-    prices   Price[]
+    prices   ItemPrice[]
 }
-model Price {
+model ItemPrice {
     id        String   @id @default(auto()) @map("_id") @db.ObjectId
     item      Item     @relation(fields: [itemId], references: [id])
     itemId    String   @db.ObjectId
-    store     Store    @relation(fields: [storeId], references: [id])
-    storeId   String   @db.ObjectId
     price     Float
     currency  String
+    store     Store    @relation(fields: [storeId], references: [id])
+    storeId   String   @db.ObjectId
     timestamp DateTime @default(now())
 }

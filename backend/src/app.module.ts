@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { PrismaModule } from './prisma/prisma.module';
-import { SupermarketsModule } from './supermarkets/supermarkets.module';
-import { ItemsModule } from './items/items.module';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { PrismaModule } from './prisma/prisma.module.js';
+import { ChainsModule } from './chains/chains.module.js';
+import { ItemsModule } from './items/items.module.js';
+import { AppController } from './app.controller.js';
+import { AppService } from './app.service.js';
 
 @Module({
     imports: [
@@ -12,7 +12,7 @@ import { AppService } from './app.service';
             isGlobal: true,
         }),
         PrismaModule,
-        SupermarketsModule,
+        ChainsModule,
         ItemsModule,
     ],
     controllers: [AppController],
