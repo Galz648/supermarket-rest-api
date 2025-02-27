@@ -6,13 +6,11 @@ import {
   Patch, 
   Param, 
   Delete, 
-  Query 
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { SupermarketsService } from './supermarkets.service';
 import { CreateSupermarketDto } from './dto/create-supermarket.dto';
 import { UpdateSupermarketDto } from './dto/update-supermarket.dto';
-import { FindNearbyDto } from './dto/find-nearby.dto';
 
 @ApiTags('supermarkets')
 @Controller('supermarkets')
@@ -36,9 +34,9 @@ export class SupermarketsController {
   @Get('nearby')
   @ApiOperation({ summary: 'Find nearby supermarkets' })
   @ApiResponse({ status: 200, description: 'Return nearby supermarkets.' })
-  findNearby(@Query() findNearbyDto: FindNearbyDto) {
-    return this.supermarketsService.findNearby(findNearbyDto);
-  }
+  // findNearby(@Query() findNearbyDto: FindNearbyDto) {
+  //   return this.supermarketsService.findNearby(findNearbyDto);
+  // }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a supermarket by id' })

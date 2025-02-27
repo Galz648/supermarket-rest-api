@@ -2,38 +2,20 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSupermarketDto } from './dto/create-supermarket.dto';
 import { UpdateSupermarketDto } from './dto/update-supermarket.dto';
-import { FindNearbyDto } from './dto/find-nearby.dto';
 
 @Injectable()
 export class SupermarketsService {
   constructor(private prisma: PrismaService) {}
 
   async create(createSupermarketDto: CreateSupermarketDto) {
-    const { coordinates, operatingHours, ...supermarketData } = createSupermarketDto;
+    const { ...supermarketData } = createSupermarketDto;
     
     // Create the supermarket
     const supermarket = await this.prisma.supermarket.create({
       data: {
         ...supermarketData,
-        latitude: coordinates.latitude,
-        longitude: coordinates.longitude,
       },
     });
-
-    // Create operating hours if provided
-    if (operatingHours) {
-      const operatingHoursData = Object.entries(operatingHours).map(([day, hours]) => ({
-        supermarketId: supermarket.id,
-        dayOfWeek: parseInt(day),
-        openTime: hours.open,
-        closeTime: hours.close,
-      }));
-
-      await this.prisma.operatingHours.createMany({
-        data: operatingHoursData,
-      });
-    }
-
     return this.findOne(supermarket.id);
   }
 
@@ -60,30 +42,30 @@ export class SupermarketsService {
     return supermarket;
   }
 
-  async findNearby({ lat, lng, radius }: FindNearbyDto) {
-    // For MongoDB, we would use the $near operator
-    // This is a simplified version that doesn't use geospatial queries yet
-    const supermarkets = await this.prisma.supermarket.findMany({
-      include: {
-        operatingHours: true,
-      },
-    });
+  // async findNearby({ lat, lng, radius }: FindNearbyDto) {
+  //   // For MongoDB, we would use the $near operator
+  //   // This is a simplified version that doesn't use geospatial queries yet
+  //   const supermarkets = await this.prisma.supermarket.findMany({
+  //     include: {
+  //       operatingHours: true,
+  //     },
+  //   });
 
-    // Calculate distance using Haversine formula
-    const nearby = supermarkets.map(supermarket => {
-      const distance = this.calculateDistance(
-        lat, 
-        lng, 
-        supermarket.latitude, 
-        supermarket.longitude
-      );
-      return { ...supermarket, distance };
-    })
-    .filter(s => s.distance <= radius)
-    .sort((a, b) => a.distance - b.distance);
+  //   // Calculate distance using Haversine formula
+  //   const nearby = supermarkets.map(supermarket => {
+  //     const distance = this.calculateDistance(
+  //       lat, 
+  //       lng, 
+  //       supermarket.latitude, 
+  //       supermarket.longitude
+  //     );
+  //     return { ...supermarket, distance };
+  //   })
+  //   .filter(s => s.distance <= radius)
+  //   .sort((a, b) => a.distance - b.distance);
 
-    return nearby;
-  }
+  //   return nearby;
+  // }
 
   async update(id: string, updateSupermarketDto: UpdateSupermarketDto) {
     // Check if supermarket exists

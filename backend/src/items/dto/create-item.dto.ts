@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsPositive } from 'class-validator';
+import { IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateItemDto {
@@ -10,14 +10,9 @@ export class CreateItemDto {
   @IsString()
   category: string;
 
-  @ApiProperty({ description: 'Manufacturer name', example: 'Tnuva' })
+  @ApiProperty({ description: 'Brand name', example: 'Tnuva' })
   @IsString()
-  manufacturer: string;
-
-  @ApiProperty({ description: 'Base price in NIS', example: 5.9 })
-  @IsNumber()
-  @IsPositive()
-  basePrice: number;
+  brand: string;
 
   @ApiProperty({ description: 'Unit of measurement', example: 'liter' })
   @IsString()

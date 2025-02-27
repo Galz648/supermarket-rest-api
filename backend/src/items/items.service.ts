@@ -5,7 +5,7 @@ import { UpdateItemDto } from './dto/update-item.dto';
 
 @Injectable()
 export class ItemsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async create(createItemDto: CreateItemDto) {
     return this.prisma.item.create({
@@ -15,7 +15,7 @@ export class ItemsService {
 
   async findAll(page = 1, limit = 20) {
     const skip = (page - 1) * limit;
-    
+
     const [items, total] = await Promise.all([
       this.prisma.item.findMany({
         skip,
@@ -42,22 +42,12 @@ export class ItemsService {
       include: {
         prices: {
           include: {
-            supermarket: true,
+            store: true,
           },
           orderBy: {
-            effectiveDate: 'desc',
+            timestamp: 'desc',
           },
           take: 10,
-        },
-        discounts: {
-          include: {
-            supermarket: true,
-          },
-          where: {
-            endDate: {
-              gte: new Date(),
-            },
-          },
         },
       },
     });
@@ -74,7 +64,7 @@ export class ItemsService {
       where: {
         OR: [
           { name: { contains: query, mode: 'insensitive' } },
-          { manufacturer: { contains: query, mode: 'insensitive' } },
+          { brand: { contains: query, mode: 'insensitive' } },
           { category: { contains: query, mode: 'insensitive' } },
         ],
       },
@@ -89,6 +79,7 @@ export class ItemsService {
         data: updateItemDto,
       });
     } catch (error) {
+      console.error(`Error updating item with ID ${id}:`, error);
       throw new NotFoundException(`Item with ID ${id} not found`);
     }
   }
@@ -99,6 +90,7 @@ export class ItemsService {
         where: { id },
       });
     } catch (error) {
+      console.error(`Error removing item with ID ${id}:`, error);
       throw new NotFoundException(`Item with ID ${id} not found`);
     }
   }
