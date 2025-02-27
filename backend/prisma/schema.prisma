@@ -1,0 +1,43 @@
+generator client {
+    provider        = "prisma-client-js"
+    previewFeatures = ["mongoDb"]
+}
+
+datasource db {
+    provider = "mongodb"
+    url      = env("DATABASE_URL")
+}
+
+model Item {
+    id       String  @id @default(auto()) @map("_id") @db.ObjectId
+    name     String
+    unit     String
+    category String
+    brand    String
+    prices   Price[]
+}
+
+model Chain {
+    id     String  @id @default(auto()) @map("_id") @db.ObjectId
+    name   String  @unique
+    stores Store[]
+}
+
+model Store {
+    id       String  @id @default(auto()) @map("_id") @db.ObjectId
+    name     String
+    chain    Chain   @relation(fields: [chainId], references: [id])
+    chainId  String  @db.ObjectId
+    location String
+    prices   Price[]
+}
+model Price {
+    id        String   @id @default(auto()) @map("_id") @db.ObjectId
+    item      Item     @relation(fields: [itemId], references: [id])
+    itemId    String   @db.ObjectId
+    store     Store    @relation(fields: [storeId], references: [id])
+    storeId   String   @db.ObjectId
+    price     Float
+    currency  String
+    timestamp DateTime @default(now())
+}
