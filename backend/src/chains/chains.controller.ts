@@ -9,7 +9,8 @@ import { ChainsService } from './chains.service.js';
 @ApiTags('chains')
 @Controller('chains')
 export class ChainsController {
-  constructor(private readonly chainsService: ChainsService) { }
+  constructor(private chainsService: ChainsService) {
+  }
 
   @Get()
   @ApiOperation({ summary: 'Get all chains' })
@@ -18,12 +19,12 @@ export class ChainsController {
     return this.chainsService.findAll();
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get a chain by id' })
-  @ApiParam({ name: 'id', description: 'Chain ID' })
-  @ApiResponse({ status: 200, description: 'Return the chain.' })
-  @ApiResponse({ status: 404, description: 'Chain not found.' })
-  findOne(@Param('id') id: string) {
-    return this.chainsService.findOne(id);
-  }
+  // @Get(':id')
+  // @ApiOperation({ summary: 'Get a chain by id' })
+  // @ApiParam({ name: 'id', description: 'Chain ID' })
+  // @ApiResponse({ status: 200, description: 'Return the chain.' })
+  // @ApiResponse({ status: 404, description: 'Chain not found.' })
+  // findOne(@Param('id') id: string) {
+  //   return this.chainsService.findOne(id);
+  // }
 } 

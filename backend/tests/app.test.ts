@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module.js';
-import { describe, beforeAll, afterAll, it, expect } from 'vitest';
 
 describe('Supermarket Chains (e2e)', () => {
     let app: INestApplication;
@@ -15,7 +14,9 @@ describe('Supermarket Chains (e2e)', () => {
         app = moduleFixture.createNestApplication();
         await app.init();
     });
-
+    afterAll(async () => {
+        await app.close();
+    });
     it('/chains (GET) should return 200 and a non-empty list', async () => {
         const response = await request(app.getHttpServer())
             .get('/chains') // replace with your actual endpoint
