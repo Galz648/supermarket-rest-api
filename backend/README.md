@@ -30,13 +30,13 @@ backend/
 │   │   ├── items.controller.ts
 │   │   ├── items.module.ts
 │   │   └── items.service.ts
-│   ├── supermarkets/        # Supermarkets module
+│   ├── chains/        # Chains module
 │   └── prisma/              # Prisma service
 └── test/                    # E2E tests
 ```
 
 
-## 💾 Data Model
+## 💾 Data Model (Roughly)
 
 ```
 ┌─────────┐       ┌───────┐       ┌───────┐
