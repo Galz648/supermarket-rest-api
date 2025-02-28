@@ -11,11 +11,12 @@
 3. [ ] 🔧 **Admin Endpoint**
    - Create an admin endpoint to allow for the creation and updating of resources that are not available through the user endpoint.
 
+5. [ ] 🔄 **CI for Pydantic Model Generation**
+   - Create a continuous integration pipeline to automatically generate Pydantic models from the OpenAPI specification generated from the DTOs.
+
 4. [ ] 📤 **Upload Data to MongoDB Atlas**
    - Implement functionality to upload necessary data to the MongoDB database hosted on Atlas.
 
-5. [ ] 🔄 **CI for Pydantic Model Generation**
-   - Create a continuous integration pipeline to automatically generate Pydantic models from the OpenAPI specification generated from the code.
 
 6. [ ] 🔗 **Connect Backend to Data Ingestion Pipeline**
    - Design and implement the connection between the backend service and the data ingestion pipeline, using the database as a mediator.

@@ -1,9 +1,8 @@
 import {
   Controller,
   Get,
-  Param,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ChainsService } from './chains.service.js';
 
 @ApiTags('chains')
