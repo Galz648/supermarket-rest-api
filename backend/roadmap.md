@@ -11,9 +11,6 @@
 3. [ ] 🔧 **Admin Endpoint**
    - Create an admin endpoint to allow for the creation and updating of resources that are not available through the user endpoint.
 
-4. [ ] ** E2E Tests for Admin Endpoint**
-   - Create end-to-end tests for the admin endpoint to ensure it behaves as expected (create, update, delete, get), and that the data is persisted in the database.
-
 5. [ ] 🔄 **CI for Pydantic Model Generation**
    - Create a continuous integration pipeline to automatically generate Pydantic models from the OpenAPI specification generated from the DTOs.
 
