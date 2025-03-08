@@ -43,7 +43,37 @@ describe('Chain Resource (e2e)', () => {
         expect(response.body).toHaveProperty('id');
     });
 
-    it.only('should delete an existing chain', async () => {
+    it('should update an existing chain', async () => {
+        const token = generateAdminToken(); // Generate a token for admin
+
+        // First create a chain to update
+        const createResponse = await request(app.getHttpServer())
+            .post('/chains')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ name: 'Chain to Update' })
+            .expect(201);
+
+        const chainId = createResponse.body.id;
+
+        // Update the chain
+        const updateResponse = await request(app.getHttpServer())
+            .put(`/chains/${chainId}`)
+            .set('Authorization', `Bearer ${token}`)
+            .send({ name: 'Updated Chain Name' })
+            .expect(200);
+
+        // Verify the chain was updated
+        expect(updateResponse.body).toHaveProperty('name', 'Updated Chain Name');
+
+        // Optional: Verify with a GET request
+        const getResponse = await request(app.getHttpServer())
+            .get(`/chains/${chainId}`)
+            .expect(200);
+
+        expect(getResponse.body).toHaveProperty('name', 'Updated Chain Name');
+    });
+
+    it('should delete an existing chain', async () => {
         const token = generateAdminToken(); // Generate a token for admin
 
         const createResponse = await request(app.getHttpServer())
