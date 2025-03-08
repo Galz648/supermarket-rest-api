@@ -2,8 +2,13 @@
 
 ## POC Version 1
 
-1. [ ] 🚀 **User-Oriented E2E Tests**
+0. [ ] 🚀 **User-Oriented E2E Tests (remote database)**
+   - [ ] Clean and seed the database on each test run
    - Develop end-to-end tests focusing on user interactions to ensure the application behaves as expected from a user's perspective.
+   - [ ] Create a test to check if the user can get stores from a specific chain (should return a non-empty list of stores)
+
+1. [ ] 🔧 **Setup local testing environment**
+   - [ ] Create a docker compose file to start the application and the database
 
 2. [ ] 🔧 **Admin Endpoint**
    - Create an admin endpoint to allow for the creation and updating of resources that are not available through the user endpoint.
