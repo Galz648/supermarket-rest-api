@@ -123,4 +123,48 @@ describe('Chain Resource (e2e)', () => {
             .set('Authorization', `Bearer ${token}`)
             .expect(404);
     });
+
+    it('should not allow creating a chain without authentication', async () => {
+        await request(app.getHttpServer())
+            .post('/chains')
+            .send({ name: 'Unauthorized Chain' })
+            .expect(403); // Expecting 403 Forbidden
+    });
+
+    it('should not allow updating a chain without authentication', async () => {
+        const token = generateAdminToken(); // Generate a token for admin
+
+        // First create a chain to update
+        const createResponse = await request(app.getHttpServer())
+            .post('/chains')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ name: 'Chain to Update' })
+            .expect(201);
+
+        const chainId = createResponse.body.id;
+
+        // Attempt to update the chain without authentication
+        await request(app.getHttpServer())
+            .put(`/chains/${chainId}`)
+            .send({ name: 'Unauthorized Update' })
+            .expect(403); // Expecting 403 Forbidden
+    });
+
+    it('should not allow deleting a chain without authentication', async () => {
+        const token = generateAdminToken(); // Generate a token for admin
+
+        // First create a chain to delete
+        const createResponse = await request(app.getHttpServer())
+            .post('/chains')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ name: 'Chain to Delete' })
+            .expect(201);
+
+        const chainIdToDelete = createResponse.body.id;
+
+        // Attempt to delete the chain without authentication
+        await request(app.getHttpServer())
+            .delete(`/chains/${chainIdToDelete}`)
+            .expect(403); // Expecting 403 Forbidden
+    });
 });
