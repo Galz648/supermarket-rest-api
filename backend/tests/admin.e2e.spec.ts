@@ -5,8 +5,11 @@ import { AppModule } from '../src/app.module.js';
 import { generateAdminToken } from '../src/utils/jwt.util.js'; // Updated path
 import { AuthMiddleware } from '../src/middleware/auth.middleware.js';
 import { clearDatabase, seedDatabase } from './utils/database.util.js';
+import { PrismaClient } from '@prisma/client';
+
 describe('Chain Resource (e2e)', () => {
     let app: INestApplication;
+    let prisma: PrismaClient;
 
     beforeAll(async () => {
         const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -19,6 +22,9 @@ describe('Chain Resource (e2e)', () => {
         app.use(new AuthMiddleware().use);
 
         await app.init();
+
+        // Initialize PrismaClient
+        prisma = new PrismaClient();
     });
 
     afterAll(async () => {
@@ -43,7 +49,7 @@ describe('Chain Resource (e2e)', () => {
         expect(response.body).toHaveProperty('id');
     });
 
-    it('should update an existing chain', async () => {
+    it('should update a chain and associate a store with it', async () => {
         const token = generateAdminToken(); // Generate a token for admin
 
         // First create a chain to update
@@ -55,22 +61,45 @@ describe('Chain Resource (e2e)', () => {
 
         const chainId = createResponse.body.id;
 
-        // Update the chain
-        const updateResponse = await request(app.getHttpServer())
+        // Update the chain name
+        const updateNameResponse = await request(app.getHttpServer())
             .put(`/chains/${chainId}`)
             .set('Authorization', `Bearer ${token}`)
             .send({ name: 'Updated Chain Name' })
             .expect(200);
 
         // Verify the chain was updated
-        expect(updateResponse.body).toHaveProperty('name', 'Updated Chain Name');
+        expect(updateNameResponse.body).toHaveProperty('name', 'Updated Chain Name');
 
-        // Optional: Verify with a GET request
+        // Create a store and associate it with the chain in a single operation
+        const chainWithStore = await prisma.chain.update({
+            where: { id: chainId },
+            data: {
+                stores: {
+                    create: {
+                        name: 'New Store',
+                        location: 'Test Location'
+                    }
+                }
+            },
+            include: {
+                stores: true
+            }
+        });
+
+        // Verify the store was created and associated with the chain
+        expect(chainWithStore.stores).toBeInstanceOf(Array);
+        expect(chainWithStore.stores.length).toBeGreaterThan(0);
+        expect(chainWithStore.stores[0]).toHaveProperty('name', 'New Store');
+
+        // Verify through the API that the chain has the store associated with it
         const getResponse = await request(app.getHttpServer())
-            .get(`/chains/${chainId}`)
+            .get(`/chains/${chainId}/stores`)
             .expect(200);
 
-        expect(getResponse.body).toHaveProperty('name', 'Updated Chain Name');
+        expect(getResponse.body).toBeInstanceOf(Array);
+        expect(getResponse.body.length).toBeGreaterThan(0);
+        expect(getResponse.body.some(s => s.name === 'New Store')).toBe(true);
     });
 
     it('should delete an existing chain', async () => {
