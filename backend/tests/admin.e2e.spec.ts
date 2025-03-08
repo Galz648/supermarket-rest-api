@@ -4,7 +4,7 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module.js';
 import { generateAdminToken } from '../src/utils/jwt.util.js'; // Updated path
 import { AuthMiddleware } from '../src/middleware/auth.middleware.js';
-import { clearDatabase } from './utils/database.util.js';
+import { clearDatabase, seedDatabase } from './utils/database.util.js';
 describe('Chain Resource (e2e)', () => {
     let app: INestApplication;
 
@@ -25,8 +25,9 @@ describe('Chain Resource (e2e)', () => {
         await app.close();
     });
 
-    afterEach(async () => {
+    beforeEach(async () => {
         await clearDatabase();
+        await seedDatabase();
     });
 
     // Test for creating a chain
@@ -42,34 +43,25 @@ describe('Chain Resource (e2e)', () => {
         expect(response.body).toHaveProperty('id');
     });
 
-    // // Test for modifying a chain
-    // it('should modify an existing chain', async () => {
-    //     const response = await request(app.getHttpServer())
-    //         .put(`/api/chains/${chainId}`)
-    //         .send({ name: 'Updated Chain', description: 'Updated description' })
-    //         .expect(200);
+    it.only('should delete an existing chain', async () => {
+        const token = generateAdminToken(); // Generate a token for admin
 
-    //     expect(response.body.name).toBe('Updated Chain');
-    // });
+        const createResponse = await request(app.getHttpServer())
+            .post('/chains')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ name: 'Chain to Delete' })
+            .expect(201);
 
-    // // Test for deleting a chain
-    // it('should delete an existing chain', async () => {
-    //     // Create a chain to delete
-    //     const createResponse = await request(app.getHttpServer())
-    //         .post('/api/chains')
-    //         .send({ name: 'Chain to Delete', description: 'Description' })
-    //         .expect(201);
+        const chainIdToDelete = createResponse.body.id;
+        console.log('chainIdToDelete', chainIdToDelete);
+        await request(app.getHttpServer())
+            .delete(`/chains/${chainIdToDelete}`)
+            .set('Authorization', `Bearer ${token}`)
+            .expect(204);
 
-    //     const chainIdToDelete = createResponse.body.id;
-
-    //     // Delete the chain
-    //     await request(app.getHttpServer())
-    //         .delete(`/api/chains/${chainIdToDelete}`)
-    //         .expect(204);
-
-    //     // Verify the chain is deleted
-    //     await request(app.getHttpServer())
-    //         .get(`/api/chains/${chainIdToDelete}`)
-    //         .expect(404);
-    // });
+        await request(app.getHttpServer())
+            .get(`/chains/${chainIdToDelete}`)
+            .set('Authorization', `Bearer ${token}`)
+            .expect(404);
+    });
 });

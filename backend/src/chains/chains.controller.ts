@@ -7,6 +7,7 @@ import {
   Put,
   Delete,
   UseGuards,
+  HttpCode,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ChainsService } from './chains.service.js';
@@ -61,10 +62,12 @@ export class ChainsController {
 
   @Delete(':id')
   @UseGuards(AdminGuard)
+  @HttpCode(204)
   @ApiOperation({ summary: 'Delete a chain' })
   @ApiResponse({ status: 204, description: 'The chain has been successfully deleted.' })
   @ApiResponse({ status: 404, description: 'Chain not found.' })
-  remove(@Param('id') id: string) {
-    return this.chainsService.deleteChain(id);
+  async remove(@Param('id') id: string) {
+    await this.chainsService.deleteChain(id);
+    return;
   }
 } 
