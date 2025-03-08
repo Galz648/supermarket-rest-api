@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module.js';
 import { PrismaClient } from '@prisma/client';
+import { clearDatabase } from './utils/database.util.js';
 
 async function seedDatabase() {
   const prisma = new PrismaClient();
@@ -36,19 +37,6 @@ async function seedDatabase() {
     },
   });
   await prisma.$disconnect();
-}
-
-async function clearDatabase() {
-  const prisma = new PrismaClient();
-  try {
-    // Delete all records from the collections
-    await prisma.itemPrice.deleteMany({});
-    await prisma.item.deleteMany({});
-    await prisma.store.deleteMany({});
-    await prisma.chain.deleteMany({});
-  } finally {
-    await prisma.$disconnect();
-  }
 }
 
 describe('Supermarket Chains (e2e)', () => {

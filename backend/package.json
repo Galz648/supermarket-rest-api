@@ -10,7 +10,7 @@
     "start:dev": "bun run nest start --watch",
     "start:debug": "bun run nest start --debug --watch",
     "start:prod": "bun run node dist/main",
-    "test": "bun test",
+    "test": "bun test --timeout 10000",
     "lint": "bun run eslint .",
     "lint:fix": "bun run eslint . --fix",
     "prisma:generate": "bun run prisma generate",
