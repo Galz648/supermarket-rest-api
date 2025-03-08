@@ -4,10 +4,9 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module.js';
 import { generateAdminToken } from '../src/utils/jwt.util.js'; // Updated path
 import { AuthMiddleware } from '../src/middleware/auth.middleware.js';
-
+import { clearDatabase } from './utils/database.util.js';
 describe('Chain Resource (e2e)', () => {
     let app: INestApplication;
-    let chainId: string;
 
     beforeAll(async () => {
         const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -26,6 +25,10 @@ describe('Chain Resource (e2e)', () => {
         await app.close();
     });
 
+    afterEach(async () => {
+        await clearDatabase();
+    });
+
     // Test for creating a chain
     it('should create a new chain', async () => {
         const token = generateAdminToken(); // Generate a token for admin
@@ -37,7 +40,6 @@ describe('Chain Resource (e2e)', () => {
             .expect(201);
 
         expect(response.body).toHaveProperty('id');
-        chainId = response.body.id;
     });
 
     // // Test for modifying a chain

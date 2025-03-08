@@ -1,5 +1,5 @@
 generator client {
-    provider        = "prisma-client-js"
+    provider = "prisma-client-js"
 }
 
 datasource db {
@@ -8,13 +8,12 @@ datasource db {
 }
 
 model Item {
-    id       String  @id @default(auto()) @map("_id") @db.ObjectId
+    id       String      @id @default(auto()) @map("_id") @db.ObjectId
     name     String
     unit     String
     category String
     brand    String
     prices   ItemPrice[]
-
 }
 
 model Chain {
@@ -24,20 +23,21 @@ model Chain {
 }
 
 model Store {
-    id       String  @id @default(auto()) @map("_id") @db.ObjectId
+    id       String      @id @default(auto()) @map("_id") @db.ObjectId
     name     String
-    chain    Chain   @relation(fields: [chainId], references: [id])
-    chainId  String  @db.ObjectId
+    chain    Chain       @relation(fields: [chainId], references: [id], onDelete: Cascade)
+    chainId  String      @db.ObjectId
     location String
     prices   ItemPrice[]
 }
+
 model ItemPrice {
     id        String   @id @default(auto()) @map("_id") @db.ObjectId
     item      Item     @relation(fields: [itemId], references: [id])
     itemId    String   @db.ObjectId
     price     Float
     currency  String
-    store     Store    @relation(fields: [storeId], references: [id])
+    store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
     storeId   String   @db.ObjectId
     timestamp DateTime @default(now())
 }
