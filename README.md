@@ -28,11 +28,6 @@ supermarket-query/
 │   ├── prisma/              # Database schema and migrations
 │   ├── src/                 # API source code
 │   └── test/                # API tests
-│
-├── frontend/                # React application
-│   ├── public/              # Static assets
-│   └── src/                 # Frontend source code
-│
 └── README.md                # Project documentation
 ```
 
@@ -70,25 +65,7 @@ npx prisma generate
 # Start the backend server
 npm run start:dev
 ```
-
-3. Set up the frontend
-```bash
-# Navigate to frontend directory
-cd ../frontend
-
-# Install dependencies
-npm install
-
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your API URL if needed
-
-# Start the frontend development server
-npm start
-```
-
 4. Access the application
-- Frontend: http://localhost:3000
 - Backend API: http://localhost:3001
 - API Documentation: http://localhost:3001/api/docs
 
@@ -110,25 +87,12 @@ npm run dev
 cd backend
 npm test
 
-# Frontend tests
-cd frontend
-npm test
-```
 
 ## 📱 Features
 
 ### Current Features
 - Basic supermarket and product data model
 - API endpoints for CRUD operations
-- Simple React UI with routing
-
-### Planned Features
-- User authentication
-- Geolocation-based supermarket search
-- Price history tracking and visualization
-- Shopping list management
-- Price alerts
-- Mobile app version
 
 ## 🧪 Technology Stack
 
@@ -136,15 +100,7 @@ npm test
 - NestJS framework
 - MongoDB with Prisma ORM
 - TypeScript
-- Jest for testing
 - Swagger for API documentation
-
-### Frontend
-- React
-- TypeScript
-- React Router
-- Axios for API communication
-- CSS for styling
 
 ## 🤝 Contributing
 
