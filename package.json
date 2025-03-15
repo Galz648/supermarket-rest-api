@@ -6,6 +6,7 @@
     "scripts": {
         "prepare": "husky",
         "generate-types": "bun run scripts/generate-types.ts",
+        "generate-client": "bun run scripts/generate-client.ts",
         "backend:start": "cd backend && bun run start",
         "backend:dev": "cd backend && bun run start:dev",
         "consumer:start": "cd message-queue-consumer && bun run start",
@@ -14,9 +15,13 @@
     "devDependencies": {
         "husky": "^9.0.11",
         "openapi-typescript": "^6.7.5",
+        "openapi-typescript-fetch": "^1.1.3",
         "typescript": "^5.0.0"
     },
     "engines": {
         "bun": ">=1.0.0"
+    },
+    "dependencies": {
+        "mongodb": "^6.14.2"
     }
 }

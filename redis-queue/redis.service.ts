@@ -36,30 +36,64 @@ export class RedisService {
      * @param port Redis port
      */
     constructor(host: string = 'localhost', port: number = 6379) {
+        console.log(`[Redis] Attempting to connect to Redis at ${host}:${port}`);
+
         this.client = new Redis({
             host,
             port,
             retryStrategy: (times) => {
                 const delay = Math.min(times * 50, 2000);
-                console.log(`Retrying connection to Redis (attempt ${times}) in ${delay}ms...`);
+                console.log(`[Redis] Retrying connection to Redis (attempt ${times}) in ${delay}ms...`);
                 return delay;
-            }
+            },
+            // Add connection timeout
+            connectTimeout: 10000,
+            // Add more detailed error handling
+            maxRetriesPerRequest: 3
         });
 
         this.client.on('connect', () => {
-            console.log('Connected to Redis');
+            console.log('[Redis] Connected to Redis');
             this.connected = true;
         });
 
+        this.client.on('ready', () => {
+            console.log('[Redis] Redis client is ready');
+        });
+
         this.client.on('error', (err) => {
-            console.error('Redis connection error:', err);
+            console.error('[Redis] Redis connection error:', err);
             this.connected = false;
         });
 
         this.client.on('close', () => {
-            console.log('Redis connection closed');
+            console.log('[Redis] Redis connection closed');
             this.connected = false;
         });
+
+        this.client.on('reconnecting', () => {
+            console.log('[Redis] Reconnecting to Redis...');
+        });
+
+        this.client.on('end', () => {
+            console.log('[Redis] Redis connection ended');
+            this.connected = false;
+        });
+
+        // Test connection immediately
+        this.testConnection();
+    }
+
+    /**
+     * Tests the Redis connection by pinging the server
+     */
+    private async testConnection(): Promise<void> {
+        try {
+            const result = await this.client.ping();
+            console.log(`[Redis] Ping test result: ${result}`);
+        } catch (error) {
+            console.error('[Redis] Ping test failed:', error);
+        }
     }
 
     /**
@@ -108,7 +142,7 @@ export class RedisService {
      */
     public async publishMessage(topic: string, payload: any): Promise<string | null> {
         if (!this.isConnected()) {
-            console.warn('Cannot publish message: Redis not connected');
+            console.warn('[Redis] Cannot publish message: Redis not connected');
             return null;
         }
 
@@ -125,11 +159,32 @@ export class RedisService {
                 entries[key] = typeof value === 'object' ? JSON.stringify(value) : String(value);
             }
 
-            // Publish message to stream
-            const messageId = await this.client.xadd(topic, '*', ...Object.entries(entries).flat());
-            return messageId;
+            // Publish message to stream with retry logic
+            let retries = 0;
+            const maxRetries = 3;
+
+            while (retries < maxRetries) {
+                try {
+                    // Publish message to stream
+                    const messageId = await this.client.xadd(topic, '*', ...Object.entries(entries).flat());
+                    if (retries > 0) {
+                        console.log(`[Redis] Successfully published message to topic ${topic} after ${retries} retries`);
+                    }
+                    return messageId;
+                } catch (error) {
+                    retries++;
+                    if (retries >= maxRetries) {
+                        throw error; // Rethrow if we've exhausted retries
+                    }
+                    console.warn(`[Redis] Retry ${retries}/${maxRetries} publishing message to topic ${topic}`);
+                    // Wait a bit before retrying
+                    await new Promise(resolve => setTimeout(resolve, 100 * retries));
+                }
+            }
+
+            return null; // Should never reach here due to throw above
         } catch (error) {
-            console.error(`Error publishing message to topic ${topic}:`, error);
+            console.error(`[Redis] Error publishing message to topic ${topic}:`, error);
             return null;
         }
     }
@@ -236,13 +291,14 @@ export class RedisService {
      */
     public async readStream(topic: string, count: number = 10): Promise<Message[]> {
         if (!this.isConnected()) {
-            console.warn('Cannot read stream: Redis not connected');
+            console.warn('[Redis] Cannot read stream: Redis not connected');
             return [];
         }
 
         try {
             // Use the last read ID or '$' for only new messages
-            const lastId = this.lastReadIds[topic] || '$';
+            const lastId = this.lastReadIds[topic] || '0-0';
+            console.log(`[Redis] Reading from stream ${topic} with lastId: ${lastId}`);
 
             // Read messages from stream
             const streams = await this.client.xread(
@@ -252,6 +308,7 @@ export class RedisService {
             );
 
             if (!streams || streams.length === 0) {
+                console.log(`[Redis] No messages found in stream ${topic}`);
                 return [];
             }
 
@@ -262,11 +319,16 @@ export class RedisService {
 
             for (const [streamName, streamMessages] of typedStreams) {
                 if (streamMessages.length > 0) {
+                    console.log(`[Redis] Found ${streamMessages.length} messages in stream ${streamName}`);
+
                     // Update the last read ID for this topic
                     const lastMessage = streamMessages[streamMessages.length - 1];
                     this.lastReadIds[topic] = lastMessage[0]; // Message ID
+                    console.log(`[Redis] Updated lastId for ${topic} to: ${this.lastReadIds[topic]}`);
 
                     for (const [messageId, messageFields] of streamMessages) {
+                        console.log(`[Redis] Processing message ${messageId} from stream ${streamName}`);
+
                         // Convert Redis message format to object
                         const payload: Record<string, any> = {};
                         for (let i = 0; i < messageFields.length; i += 2) {
@@ -295,9 +357,10 @@ export class RedisService {
                 }
             }
 
+            console.log(`[Redis] Returning ${messages.length} messages from stream ${topic}`);
             return messages;
         } catch (error) {
-            console.error(`Error reading messages from topic ${topic}:`, error);
+            console.error(`[Redis] Error reading messages from topic ${topic}:`, error);
             return [];
         }
     }

@@ -3,29 +3,15 @@ import { PrismaService } from '../prisma/prisma.service.js';
 
 @Injectable()
 export class ItemsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
-  async findAll(page = 1, limit = 20) {
-    const skip = (page - 1) * limit;
+  async findAll() {
+    // Simplified to just return all items without pagination
+    const items = await this.prisma.item.findMany({
+      orderBy: { name: 'asc' },
+    });
 
-    const [items, total] = await Promise.all([
-      this.prisma.item.findMany({
-        skip,
-        take: limit,
-        orderBy: { name: 'asc' },
-      }),
-      this.prisma.item.count(),
-    ]);
-
-    return {
-      items,
-      meta: {
-        total,
-        page,
-        limit,
-        pages: Math.ceil(total / limit),
-      },
-    };
+    return items;
   }
 
   async findOne(id: string) {
@@ -52,12 +38,19 @@ export class ItemsService {
   }
 
   async search(query: string) {
+    // Ensure query is a valid string
+    const validQuery = query?.trim() || '';
+
+    if (!validQuery) {
+      return [];
+    }
+
     return this.prisma.item.findMany({
       where: {
         OR: [
-          { name: { contains: query, mode: 'insensitive' } },
-          { brand: { contains: query, mode: 'insensitive' } },
-          { category: { contains: query, mode: 'insensitive' } },
+          { name: { contains: validQuery, mode: 'insensitive' } },
+          { brand: { contains: validQuery, mode: 'insensitive' } },
+          { category: { contains: validQuery, mode: 'insensitive' } },
         ],
       },
       take: 20,

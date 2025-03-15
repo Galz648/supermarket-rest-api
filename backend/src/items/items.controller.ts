@@ -11,16 +11,12 @@ import { ItemsService } from './items.service.js';
 @Controller('items')
 export class ItemsController {
   constructor(private readonly itemsService: ItemsService) { }
+
   @Get()
-  @ApiOperation({ summary: 'Get all items with pagination' })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiResponse({ status: 200, description: 'Return paginated items.' })
-  findAll(
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-  ) {
-    return this.itemsService.findAll(page, limit);
+  @ApiOperation({ summary: 'Get all items' })
+  @ApiResponse({ status: 200, description: 'Return all items.' })
+  findAll() {
+    return this.itemsService.findAll();
   }
 
   @Get('search')

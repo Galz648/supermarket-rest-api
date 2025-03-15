@@ -1,19 +1,8 @@
-#!/usr/bin/env sh
+#!/usr/bin/env sh ?
 . "$(dirname -- "$0")/_/husky.sh"
 
-echo "🔄 Running pre-commit hook to generate API types..."
+# Run the OpenAPI generation script
+. "$(dirname -- "$0")/generate-openapi.sh"
 
-# Check if backend is running by making a request to the API docs endpoint
-if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/docs-json | grep -q "200"; then
-  echo "✅ Backend is running, generating types..."
-  bun run generate-types
-else
-  echo "⚠️ Backend is not running. Types cannot be generated."
-  echo "⚠️ Please start the backend with 'bun run backend:dev' to generate types."
-  echo "⚠️ Continuing with commit without generating types..."
-fi
-
-# Add the generated types to the commit if they exist and have changed
-if [ -f "shared/types/api.d.ts" ]; then
-  git add shared/types/api.d.ts
-fi 
+# Run the Prisma client generation script
+. "$(dirname -- "$0")/generate-prisma.sh" 

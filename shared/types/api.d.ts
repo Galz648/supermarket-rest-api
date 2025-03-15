@@ -27,7 +27,7 @@ export interface paths {
     get: operations["ChainsController_findStores"];
   };
   "/items": {
-    /** Get all items with pagination */
+    /** Get all items */
     get: operations["ItemsController_findAll"];
   };
   "/items/search": {
@@ -155,16 +155,10 @@ export interface operations {
       };
     };
   };
-  /** Get all items with pagination */
+  /** Get all items */
   ItemsController_findAll: {
-    parameters: {
-      query?: {
-        page?: number;
-        limit?: number;
-      };
-    };
     responses: {
-      /** @description Return paginated items. */
+      /** @description Return all items. */
       200: {
         content: never;
       };

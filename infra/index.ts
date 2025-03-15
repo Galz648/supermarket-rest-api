@@ -29,27 +29,27 @@ const namespace = new k8s.core.v1.Namespace("supermarket-etl", {
 // });
 
 // MongoDB Deployment
-const mongoLabels = { app: "mongodb" };
-const mongoDeployment = new k8s.apps.v1.Deployment("mongodb", {
-    metadata: { namespace: namespace.metadata.name },
-    spec: {
-        selector: { matchLabels: mongoLabels },
-        replicas: 1,
-        template: {
-            metadata: { labels: mongoLabels },
-            spec: { containers: [{ name: "mongodb", image: "mongo:latest" }] }
-        }
-    }
-});
+// const mongoLabels = { app: "mongodb" };
+// const mongoDeployment = new k8s.apps.v1.Deployment("mongodb", {
+//     metadata: { namespace: namespace.metadata.name },
+//     spec: {
+//         selector: { matchLabels: mongoLabels },
+//         replicas: 1,
+//         template: {
+//             metadata: { labels: mongoLabels },
+//             spec: { containers: [{ name: "mongodb", image: "mongo:latest" }] }
+//         }
+//     }
+// });
 
-const mongoService = new k8s.core.v1.Service("mongodb", {
-    metadata: { namespace: namespace.metadata.name },
-    spec: {
-        type: "NodePort",
-        selector: mongoLabels,
-        ports: [{ port: 27017, targetPort: 27017, nodePort: 30002 }]
-    }
-});
+// const mongoService = new k8s.core.v1.Service("mongodb", {
+//     metadata: { namespace: namespace.metadata.name },
+//     spec: {
+//         type: "NodePort",
+//         selector: mongoLabels,
+//         ports: [{ port: 27017, targetPort: 27017, nodePort: 30002 }]
+//     }
+// });
 
 // Redis Message Queue Deployment
 const redisLabels = { app: "redis" };
@@ -102,7 +102,7 @@ const consumerDeployment = new k8s.apps.v1.Deployment("message-queue-consumer", 
             spec: {
                 containers: [{
                     name: "message-queue-consumer",
-                    image: "message-queue-consumer:latest",
+                    image: "message-queue-consumer", 
                     imagePullPolicy: "Never",
                     env: [
                         { name: "REDIS_HOST", value: "redis" },
