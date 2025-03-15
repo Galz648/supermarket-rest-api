@@ -103,10 +103,13 @@ const consumerDeployment = new k8s.apps.v1.Deployment("message-queue-consumer", 
                 containers: [{
                     name: "message-queue-consumer",
                     image: "message-queue-consumer:latest",
+                    imagePullPolicy: "Never",
                     env: [
                         { name: "REDIS_HOST", value: "redis" },
                         { name: "REDIS_PORT", value: "6379" },
-                        { name: "API_ENDPOINT", value: "http://backend:3000" }
+                        { name: "API_ENDPOINT", value: "http://backend:3000" },
+                        { name: "POLL_INTERVAL", value: "1000" },
+                        { name: "CONSUMER_GROUP", value: "supermarket-etl" }
                     ],
                     resources: {
                         requests: {
