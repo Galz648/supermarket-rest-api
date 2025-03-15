@@ -21,11 +21,11 @@ class RedisProducer {
         // Add periodic connection status check
         this.connectionCheckInterval = setInterval(() => {
             console.log(`[Producer] Redis connection status: ${this.redisService.isConnected() ? 'CONNECTED' : 'DISCONNECTED'}`);
-        }, 5000);
+        }, 1000);
     }
 
     /**
-     * Starts sending "Hello World" messages to Redis every second
+     * Starts sending "Hello World" messages to Redis every 5 seconds
      */
     public start(): void {
         if (this.subscription) {
@@ -34,11 +34,11 @@ class RedisProducer {
         }
 
         console.log('[Producer] Starting Redis Producer...');
-        console.log('[Producer] Sending "Hello World" messages every second');
+        console.log('[Producer] Sending "Hello World" messages every 5 seconds');
         console.log(`[Producer] Current Redis connection status: ${this.redisService.isConnected() ? 'CONNECTED' : 'DISCONNECTED'}`);
 
         // Send a message every second using RxJS
-        this.subscription = interval(1000).pipe(
+        this.subscription = interval(5000).pipe(
             filter(() => {
                 const isConnected = this.redisService.isConnected();
                 if (!isConnected) {

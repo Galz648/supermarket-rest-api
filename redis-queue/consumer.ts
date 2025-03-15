@@ -1,7 +1,6 @@
 import { RedisService, Message, MessageTopic } from './redis.service';
 // Import the client directly from the file to avoid module resolution issues
-import { fetcher } from './api-client/client';
-import type { paths } from '../shared/types/api.d';
+import { api, fetcher } from './api-client/client';
 
 class RedisConsumer {
     private redisService: RedisService;
@@ -184,31 +183,38 @@ class RedisConsumer {
 
         try {
             console.log('[Consumer] Interacting with API...');
-
             // Create API operations directly using fetcher
-            const getItems = fetcher.path('/items').method('get').create();
-            const getChains = fetcher.path('/chains').method('get').create();
+            const createItem = api.create;
+            const createItemResponse = await createItem({
+                name: 'Test Item',
+                category: 'Test Category',
+                brand: 'Test Brand',
+                unit: 'Test Unit'
+            });
+            console.log('[Consumer] Test item created successfully:', createItemResponse.data);
+            // const getItems = fetcher.path('/items').method('get').create();
+            // const getChains = fetcher.path('/chains').method('get').create();
 
-            // Test with dummy data regardless of the message topic
-            try {
-                // Try to get items - using empty object for query to avoid type issues
-                const itemsResponse = await getItems({});
-                console.log(`[Consumer] Successfully fetched items from API:`,
-                    Array.isArray(itemsResponse.data) ? itemsResponse.data.length : 'Response is not an array');
-            } catch (apiError: any) {
-                // Don't set apiConnectionStatus to false on every error
-                // This allows us to keep trying even if one endpoint fails
-                console.log('[Consumer] Could not fetch items, API endpoint might not be available:', apiError.message);
-            }
+            // // Test with dummy data regardless of the message topic
+            // try {
+            //     // Try to get items - using empty object for query to avoid type issues
+            //     const itemsResponse = await getItems({});
+            //     console.log(`[Consumer] Successfully fetched items from API:`,
+            //         Array.isArray(itemsResponse.data) ? itemsResponse.data.length : 'Response is not an array');
+            // } catch (apiError: any) {
+            //     // Don't set apiConnectionStatus to false on every error
+            //     // This allows us to keep trying even if one endpoint fails
+            //     console.log('[Consumer] Could not fetch items, API endpoint might not be available:', apiError.message);
+            // }
 
-            try {
-                // Try to get chains
-                const chainsResponse = await getChains({});
-                console.log(`[Consumer] Successfully fetched chains from API:`,
-                    Array.isArray(chainsResponse.data) ? chainsResponse.data.length : 'Response is not an array');
-            } catch (apiError: any) {
-                console.log('[Consumer] Could not fetch chains, API endpoint might not be available:', apiError.message);
-            }
+            // try {
+            //     // Try to get chains
+            //     const chainsResponse = await getChains({});
+            //     console.log(`[Consumer] Successfully fetched chains from API:`,
+            //         Array.isArray(chainsResponse.data) ? chainsResponse.data.length : 'Response is not an array');
+            // } catch (apiError: any) {
+            //     console.log('[Consumer] Could not fetch chains, API endpoint might not be available:', apiError.message);
+            // }
 
             /* 
             // Original topic-based code commented out

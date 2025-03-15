@@ -29,6 +29,8 @@ export interface paths {
   "/items": {
     /** Get all items */
     get: operations["ItemsController_findAll"];
+    /** Create a new item */
+    post: operations["ItemsController_create"];
   };
   "/items/search": {
     /** Search for items */
@@ -44,6 +46,28 @@ export type webhooks = Record<string, never>;
 
 export interface components {
   schemas: {
+    CreateItemDto: {
+      /**
+       * @description Item name
+       * @example Milk 3%
+       */
+      name: string;
+      /**
+       * @description Item category
+       * @example Dairy
+       */
+      category: string;
+      /**
+       * @description Brand name
+       * @example Tnuva
+       */
+      brand: string;
+      /**
+       * @description Unit of measurement
+       * @example liter
+       */
+      unit: string;
+    };
   };
   responses: never;
   parameters: never;
@@ -160,6 +184,20 @@ export interface operations {
     responses: {
       /** @description Return all items. */
       200: {
+        content: never;
+      };
+    };
+  };
+  /** Create a new item */
+  ItemsController_create: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateItemDto"];
+      };
+    };
+    responses: {
+      /** @description The item has been successfully created. */
+      201: {
         content: never;
       };
     };

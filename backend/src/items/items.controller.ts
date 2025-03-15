@@ -1,11 +1,14 @@
 import {
   Controller,
   Get,
+  Post,
+  Body,
   Param,
   Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { ItemsService } from './items.service.js';
+import { CreateItemDto } from './dto/create-item.dto.js';
 
 @ApiTags('items')
 @Controller('items')
@@ -17,6 +20,13 @@ export class ItemsController {
   @ApiResponse({ status: 200, description: 'Return all items.' })
   findAll() {
     return this.itemsService.findAll();
+  }
+
+  @Post()
+  @ApiOperation({ summary: 'Create a new item' })
+  @ApiResponse({ status: 201, description: 'The item has been successfully created.' })
+  create(@Body() createItemDto: CreateItemDto) {
+    return this.itemsService.create(createItemDto);
   }
 
   @Get('search')

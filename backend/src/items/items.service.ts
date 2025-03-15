@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { CreateItemDto } from './dto/create-item.dto.js';
 
 @Injectable()
 export class ItemsService {
@@ -12,6 +13,12 @@ export class ItemsService {
     });
 
     return items;
+  }
+
+  async create(createItemDto: CreateItemDto) {
+    return this.prisma.item.create({
+      data: createItemDto,
+    });
   }
 
   async findOne(id: string) {
