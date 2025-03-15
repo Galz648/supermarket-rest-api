@@ -36,14 +36,13 @@ supermarket-query/
 
 ## 🔄 Type Generation
 
-This project uses Husky to automatically generate TypeScript types from the NestJS OpenAPI schema on pre-commit. This ensures that the message queue consumer and other components have access to the latest API types.
+This project provides scripts to generate TypeScript types from the NestJS OpenAPI schema. This ensures that the message queue consumer and other components have access to the latest API types.
 
 ### How it works
 
-1. When you commit changes, a pre-commit hook runs
-2. If the backend is running, it fetches the OpenAPI schema
+1. Run `bun run generate-types` to generate the TypeScript types
+2. It fetches the OpenAPI schema from the backend (ensure the backend is running)
 3. It generates TypeScript types in the `shared/types` directory
-4. The generated types are added to your commit
 
 ### Manual type generation
 
