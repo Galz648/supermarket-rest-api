@@ -1,9 +1,19 @@
 #!/usr/bin/env sh
 
+# Check if the server is already running
+if ! nc -z localhost 3000 2>/dev/null; then
+  echo "Error: Server is not running on port 3000"
+  echo "Please start the server with 'bun run backend:dev' before committing"
+  exit 1
+fi
+
+echo "Server is running on port 3000, proceeding with hooks..."
+
 # Run the OpenAPI types generation script
 sh "$(dirname -- "$0")/generate-openapi.sh"
 
 # Run the Prisma client generation script
 sh "$(dirname -- "$0")/generate-prisma.sh" 
 
+# Run the consumer-backend client generation script
 sh "$(dirname -- "$0")/generate-consumer-backend-client.sh"
