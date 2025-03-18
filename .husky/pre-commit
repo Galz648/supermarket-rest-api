@@ -1,8 +1,0 @@
-#!/usr/bin/env sh ?
-. "$(dirname -- "$0")/_/husky.sh"
-
-# Run the OpenAPI generation script
-. "$(dirname -- "$0")/generate-openapi.sh"
-
-# Run the Prisma client generation script
-. "$(dirname -- "$0")/generate-prisma.sh" 

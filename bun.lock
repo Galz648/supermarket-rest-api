@@ -7,8 +7,8 @@
         "mongodb": "^6.14.2",
       },
       "devDependencies": {
-        "husky": "^9.0.11",
         "openapi-typescript": "^6.7.5",
+        "openapi-typescript-fetch": "^1.1.3",
         "typescript": "^5.0.0",
       },
     },
@@ -44,8 +44,6 @@
 
     "glob-parent": ["glob-parent@5.1.2", "", { "dependencies": { "is-glob": "^4.0.1" } }, "sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow=="],
 
-    "husky": ["husky@9.1.7", "", { "bin": { "husky": "bin.js" } }, "sha512-5gs5ytaNjBrh5Ow3zrvdUUY+0VxIuWVL4i9irt6friV+BqdCfmV11CQTWMiBYWHbXhco+J1kHfTOUkePhCDvMA=="],
-
     "is-extglob": ["is-extglob@2.1.1", "", {}, "sha512-SbKbANkN603Vi4jEZv49LeVJMn4yGwsbzZworEoyEiutsN3nJYdbO36zfhGJ6QEDpOZIFkDtnq5JRxmvl3jsoQ=="],
 
     "is-glob": ["is-glob@4.0.3", "", { "dependencies": { "is-extglob": "^2.1.1" } }, "sha512-xelSayHH36ZgE7ZWhli7pW34hNbNl8Ojv5KVmkJD4hBdD3th8Tfk9vYasLM+mXWOZhFkgZfxhLSnrwRr4elSSg=="],
@@ -65,6 +63,8 @@
     "mongodb-connection-string-url": ["mongodb-connection-string-url@3.0.2", "", { "dependencies": { "@types/whatwg-url": "^11.0.2", "whatwg-url": "^14.1.0 || ^13.0.0" } }, "sha512-rMO7CGo/9BFwyZABcKAWL8UJwH/Kc2x0g72uhDWzG48URRax5TCIcJ7Rc3RZqffZzO/Gwff/jyKwCU9TN8gehA=="],
 
     "openapi-typescript": ["openapi-typescript@6.7.6", "", { "dependencies": { "ansi-colors": "^4.1.3", "fast-glob": "^3.3.2", "js-yaml": "^4.1.0", "supports-color": "^9.4.0", "undici": "^5.28.4", "yargs-parser": "^21.1.1" }, "bin": { "openapi-typescript": "bin/cli.js" } }, "sha512-c/hfooPx+RBIOPM09GSxABOZhYPblDoyaGhqBkD/59vtpN21jEuWKDlM0KYTvqJVlSYjKs0tBcIdeXKChlSPtw=="],
+
+    "openapi-typescript-fetch": ["openapi-typescript-fetch@1.1.3", "", {}, "sha512-smLZPck4OkKMNExcw8jMgrMOGgVGx2N/s6DbKL2ftNl77g5HfoGpZGFy79RBzU/EkaO0OZpwBnslfdBfh7ZcWg=="],
 
     "picomatch": ["picomatch@2.3.1", "", {}, "sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA=="],
 

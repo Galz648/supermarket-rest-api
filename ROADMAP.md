@@ -27,18 +27,9 @@ This roadmap outlines the development plan for the entire repository, including 
 ### Infrastructure
 - [x] Set up Pulumi for infrastructure as code
 - [ ] Complete Kubernetes cluster configuration
-- [ ] Implement CI/CD pipelines
+- [ ] Set up all resources using Pulumi (redis (producer, consumer, message-queue), backend, mongodb instance)
 - [ ] Set up monitoring and logging
-
-### Data Pipeline
-- [ ] Set up scheduled data fetching
-- [ ] Create data ingestion services
-- [ ] Implement ETL processes
-- [ ] Add data validation and cleaning
-
-### n8n Workflow Integration
-- [ ] Set up n8n instance in Kubernetes cluster
-- [ ] Create workflows for data processing
-- [ ] Implement automated alerts and notifications
-- [ ] Connect n8n with external data sources
-- [ ] Develop custom n8n nodes for specific requirements
+- [ ] generate a client for the backend (possibly using tRPC)
+- [ ] Implement pre-commit hooks
+- [ ] Set up CI
+- [ ] Set up CD
