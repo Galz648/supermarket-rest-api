@@ -24,9 +24,6 @@ class RedisProducer {
         }, 1000);
     }
 
-    /**
-     * Starts sending "Hello World" messages to Redis every 5 seconds
-     */
     public start(): void {
         if (this.subscription) {
             console.log('[Producer] Already running');

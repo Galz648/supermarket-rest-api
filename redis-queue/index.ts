@@ -28,7 +28,6 @@ const config = {
         pollInterval: parseInt(process.env.POLL_INTERVAL || '1000'),
     },
     topics: Object.values(MessageTopic),
-    publishTestMessages: true // Force test messages to be published
 };
 
 // Create Redis service
@@ -97,58 +96,13 @@ const startProducer = async () => {
             clearInterval(checkConnection);
             console.log('Redis connected, starting producer...');
 
-            // Send a test message to the product-updates topic
-            console.log('Sending initial test message...');
-            redisProducer.publishMessage(MessageTopic.PRODUCT_UPDATES, {
-                message: 'Hello, world!',
-                timestamp: new Date().toISOString(),
-                test: true
-            }).then(messageId => {
-                if (messageId) {
-                    console.log(`Test message sent with ID: ${messageId}`);
-
-                    // Send a test item creation message after the initial message
-                    setTimeout(() => {
-                        sendTestItemCreationMessage();
-                    }, 2000);
-                } else {
-                    console.error('Failed to send test message');
-                }
-            }).catch(error => {
-                console.error('Error sending test message:', error);
-            });
-
             // Start the producer to send regular messages
             console.log('Starting regular message producer...');
             redisProducer.start();
 
-            // Send additional test messages every 5 seconds
-            console.log('Setting up additional test messages every 5 seconds...');
-            setInterval(() => {
-                console.log('Sending additional test message...');
-                redisProducer.publishMessage(MessageTopic.PRODUCT_UPDATES, {
-                    message: `Test message at ${new Date().toISOString()}`,
-                    timestamp: new Date().toISOString(),
-                    test: true
-                }).then(messageId => {
-                    if (messageId) {
-                        console.log(`Additional test message sent with ID: ${messageId}`);
-                    }
-                }).catch(error => {
-                    console.error('Error sending additional test message:', error);
-                });
-            }, 5000);
-
-            // Send a test item creation message every 15 seconds
-            console.log('Setting up test item creation every 15 seconds...');
-            setInterval(() => {
-                sendTestItemCreationMessage();
-            }, 15000);
-        } else {
-            console.log('Waiting for Redis connection...');
         }
-    }, 1000);
-};
+    })
+}
 
 // Start both components
 console.log('Starting both consumer and producer...');
