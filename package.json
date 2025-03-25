@@ -1,0 +1,23 @@
+{
+  "name": "supermarket-rest-api",
+  "version": "1.0.0",
+  "description": "Supermarket REST API with NestJS backend and message queue consumer",
+  "type": "module",
+  "scripts": {
+    "backend:start": "cd backend && bun run start",
+    "backend:dev": "cd backend && bun run start:dev",
+    "consumer:start": "cd message-queue-consumer && bun run start",
+    "consumer:dev": "cd message-queue-consumer && bun run dev"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^6.7.5",
+    "openapi-typescript-fetch": "^1.1.3",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "dependencies": {
+    "mongodb": "^6.14.2"
+  }
+}
