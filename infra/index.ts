@@ -1,128 +1,124 @@
-import * as k8s from "@pulumi/kubernetes";
+import * as digitalocean from "@pulumi/digitalocean";
+import * as kubernetes from "@pulumi/kubernetes";
+import * as pulumi from "@pulumi/pulumi";
 
-// Create a dedicated namespace
-const namespace = new k8s.core.v1.Namespace("supermarket-etl", {
-    metadata: { name: "supermarket-etl" }
+// Enable some configurable parameters.
+const config = new pulumi.Config();
+const nodeCount = config.getNumber("nodeCount") || 1;
+const appReplicaCount = config.getNumber("appReplicaCount") || 1;
+// const domainName = config.get("domainName") || "israeli-supermarkets.xyz";
+const domainName = config.get("domainName");
+
+// Provision a DigitalOcean Kubernetes cluster and export its resulting
+// kubeconfig to make it easy to access from the kubectl command line.
+const cluster = new digitalocean.KubernetesCluster("do-cluster", {
+    region: digitalocean.Region.FRA1,
+    version: digitalocean.getKubernetesVersions().then(p => p.latestVersion),
+    nodePool: {
+        name: "default",
+        size: digitalocean.DropletSlug.DropletS2VCPU2GB,
+        nodeCount: nodeCount,
+    },
 });
 
-
-// const backendLabels = { app: "backend" };
-// const backendDeployment = new k8s.apps.v1.Deployment("backend", {
-//     metadata: { namespace: namespace.metadata.name },
-//     spec: {
-//         selector: { matchLabels: backendLabels },
-//         replicas: 1,
-//         template: {
-//             metadata: { labels: backendLabels },
-//             spec: { containers: [{ name: "backend", image: "backend" }] }
-//         }
-//     }
-// });
-
-// const backendService = new k8s.core.v1.Service("backend", {
-//     metadata: { namespace: namespace.metadata.name },
-//     spec: {
-//         type: "NodePort",
-//         selector: backendLabels,
-//         ports: [{ port: 3000, targetPort: 3000, nodePort: 30000 }]
-//     }
-// });
-
-// MongoDB Deployment
-// const mongoLabels = { app: "mongodb" };
-// const mongoDeployment = new k8s.apps.v1.Deployment("mongodb", {
-//     metadata: { namespace: namespace.metadata.name },
-//     spec: {
-//         selector: { matchLabels: mongoLabels },
-//         replicas: 1,
-//         template: {
-//             metadata: { labels: mongoLabels },
-//             spec: { containers: [{ name: "mongodb", image: "mongo:latest" }] }
-//         }
-//     }
-// });
-
-// const mongoService = new k8s.core.v1.Service("mongodb", {
-//     metadata: { namespace: namespace.metadata.name },
-//     spec: {
-//         type: "NodePort",
-//         selector: mongoLabels,
-//         ports: [{ port: 27017, targetPort: 27017, nodePort: 30002 }]
-//     }
-// });
-
-// Redis Message Queue Deployment
-const redisLabels = { app: "redis" };
-const redisDeployment = new k8s.apps.v1.Deployment("redis", {
-    metadata: { namespace: namespace.metadata.name },
-    spec: {
-        selector: { matchLabels: redisLabels },
-        replicas: 1,
-        template: {
-            metadata: { labels: redisLabels },
-            spec: {
-                containers: [{
-                    name: "redis",
-                    image: "redis:latest",
-                    ports: [{ containerPort: 6379 }],
-                    resources: {
-                        requests: {
-                            cpu: "100m",
-                            memory: "128Mi"
-                        },
-                        limits: {
-                            cpu: "200m",
-                            memory: "256Mi"
-                        }
-                    }
-                }]
-            }
-        }
+// The DigitalOcean Kubernetes cluster periodically gets a new certificate
+// so we look up the cluster by name and get the current kubeconfig after
+// initial provisioning. You'll notice that the `certificate-authority-data`
+// field changes on every `pulumi update`.
+const kubeconfig = cluster.status.apply(status => {
+    if (status === "running") {
+        const clusterDataSource = cluster.name.apply(name => digitalocean.getKubernetesCluster({ name }));
+        return clusterDataSource.kubeConfigs[0].rawConfig;
+    } else {
+        return cluster.kubeConfigs[0].rawConfig;
     }
 });
 
-const redisService = new k8s.core.v1.Service("redis", {
-    metadata: { namespace: namespace.metadata.name },
-    spec: {
-        type: "ClusterIP",
-        selector: redisLabels,
-        ports: [{ port: 6379, targetPort: 6379 }]
-    }
-});
+// Now lets actually deploy an application to our new cluster. We begin
+// by creating a new "Provider" object that uses our kubeconfig above,
+// so that any application objects deployed go to our new cluster.
+const provider = new kubernetes.Provider("do-k8s", { kubeconfig });
 
-// Message Queue Consumer Deployment
-const consumerLabels = { app: "message-queue-consumer" };
-const consumerDeployment = new k8s.apps.v1.Deployment("message-queue-consumer", {
-    metadata: { namespace: namespace.metadata.name },
+// Now create a Kubernetes Deployment using the "nginx" container
+// image from the Docker Hub, replicated a number of times, and a
+// load balanced Service in front listening for traffic on port 80.
+
+// const do_registry_url = "registry.digitalocean.com/israeli-supermarkets-container-registry";
+const image_version = "v1.0.3";
+// const api_image_tag = `${do_registry_url}/backend-api:${image_version}`;
+const api_image_tag = `backend-api:${image_version}`;
+const apiLabels = { "app": "api" };
+const appLabels = { "app": "app-nginx" };
+
+
+const apiDeployment = new kubernetes.apps.v1.Deployment("do-api-dep", {
     spec: {
-        selector: { matchLabels: consumerLabels },
+        selector: { matchLabels: apiLabels },
         replicas: 1,
         template: {
-            metadata: { labels: consumerLabels },
+            metadata: { labels: apiLabels },
             spec: {
                 containers: [{
-                    name: "message-queue-consumer",
-                    image: "message-queue-consumer", 
                     imagePullPolicy: "Never",
-                    env: [
-                        { name: "REDIS_HOST", value: "redis" },
-                        { name: "REDIS_PORT", value: "6379" },
-                        { name: "API_ENDPOINT", value: "http://backend:3000" },
-                        { name: "POLL_INTERVAL", value: "1000" },
-                        { name: "CONSUMER_GROUP", value: "supermarket-etl" }
-                    ],
-                    resources: {
-                        requests: {
-                            cpu: "100m",
-                            memory: "128Mi"
-                        },
-                        limits: {
-                            cpu: "200m",
-                            memory: "256Mi"
-                        }
-                    }
-                }]
-            }
-        }
-    }
+                    name: "backend-api",
+                    image: api_image_tag,
+                    ports: [{ containerPort: 80 }],
+                }],
+            },
+        },
+    },
+}, { provider });
+
+const apiService = new kubernetes.core.v1.Service("do-api-svc", {
+    spec: {
+        type: "LoadBalancer",
+        selector: apiLabels,
+        ports: [{ port: 80, targetPort: 80 }],
+    },
 });
+const app = new kubernetes.apps.v1.Deployment("do-app-dep", {
+    spec: {
+        selector: { matchLabels: appLabels },
+        replicas: appReplicaCount,
+        template: {
+            metadata: { labels: appLabels },
+            spec: {
+                containers: [{
+                    name: "nginx",
+                    image: "nginx",
+                }],
+            },
+        },
+    },
+}, { provider });
+const appService = new kubernetes.core.v1.Service("do-app-svc", {
+    spec: {
+        type: "LoadBalancer",
+        selector: app.spec.template.metadata.labels,
+        ports: [{
+            port: 80,
+            targetPort: 80,
+        }],
+    },
+}, { provider });
+
+const ingressIp = appService.status.loadBalancer.ingress[0].ip;
+// Finally, optionally set up a DigitalOcean DNS entry for our
+// resulting load balancer's IP address. This gives us a stable URL
+// for our cluster'sapplication.
+if (domainName) {
+    const domain = new digitalocean.Domain("do-domain", {
+        name: domainName,
+        ipAddress: ingressIp,
+    });
+
+    const cnameRecord = new digitalocean.DnsRecord("do-domain-cname", {
+        domain: domain.name,
+        type: "CNAME",
+        name: "www",
+        value: "@",
+    });
+}
+
+export { kubeconfig }
+export { ingressIp }

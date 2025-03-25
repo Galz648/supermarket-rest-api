@@ -10,6 +10,9 @@
     "consumer:dev": "cd message-queue-consumer && bun run dev"
   },
   "devDependencies": {
+    "@pulumi/digitalocean": "^4.40.2",
+    "@pulumi/docker": "^4.6.2",
+    "@pulumi/pulumi": "^3.157.0",
     "openapi-typescript": "^6.7.5",
     "openapi-typescript-fetch": "^1.1.3",
     "typescript": "^5.0.0"
