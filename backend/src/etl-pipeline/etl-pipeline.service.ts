@@ -50,7 +50,7 @@ export class EtlPipelineService {
     }
 
     // Run every 30 seconds for demo/testing purposes
-    @Cron(CronExpression.EVERY_MINUTE)
+    @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
     async runEtlPipelineJob() {
         this.logger.log('========================================================');
         this.logger.log('STARTING ETL PIPELINE EXECUTION');
