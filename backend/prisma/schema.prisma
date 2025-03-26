@@ -24,12 +24,14 @@ model Chain {
 }
 
 model Store {
-    id       String      @id @default(auto()) @map("_id") @db.ObjectId
-    name     String
-    chain    Chain       @relation(fields: [chainId], references: [id], onDelete: Cascade)
-    chainId  String      @db.ObjectId
-    location String
-    prices   ItemPrice[]
+    id      String      @id @default(auto()) @map("_id") @db.ObjectId
+    name    String
+    chain   Chain       @relation(fields: [chainId], references: [id], onDelete: Cascade)
+    chainId String      @db.ObjectId
+    address String
+    prices  ItemPrice[]
+
+    @@unique([chainId, name, address], name: "chainId_name_address")
 }
 
 model ItemPrice {

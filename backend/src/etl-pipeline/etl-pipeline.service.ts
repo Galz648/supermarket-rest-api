@@ -1,27 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { DataAccessService, SupermarketChain } from './data-access.service.js';
-import { ShufersalTransformerService } from './transformers/shufersal-transformer.service.js';
-import { Transformer } from './transformers/transfomer.js';
-
-
-@Injectable()
-class TransformerFactory {
-    private readonly transformers: Map<SupermarketChain, Transformer> = new Map();
-
-    constructor(private readonly shufersalTransformer: ShufersalTransformerService) {
-        this.transformers.set(SupermarketChain.SHUFERSAL, shufersalTransformer);
-    }
-
-    getTransformer(chain: SupermarketChain): Transformer {
-        if (!this.transformers.has(chain)) {
-            throw new Error(`No transformer found for chain: ${chain}`);
-        }
-        else {
-            return this.transformers.get(chain)
-        }
-    }
-}
+import { TransformerFactory } from './transformers/transformer-factory.js';
+import { PrismaService } from '../prisma/prisma.service.js';
+import { from, mergeMap, toArray } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 
 interface ETLContext {
     chains: SupermarketChain[]
@@ -37,6 +20,7 @@ export class EtlPipelineService {
     constructor(
         private readonly dataAccess: DataAccessService,
         private readonly transformerFactory: TransformerFactory,
+        private readonly prisma: PrismaService,
     ) { }
 
 
@@ -66,7 +50,7 @@ export class EtlPipelineService {
     }
 
     // Run every 30 seconds for demo/testing purposes
-    @Cron(CronExpression.EVERY_30_SECONDS)
+    @Cron(CronExpression.EVERY_MINUTE)
     async runEtlPipelineJob() {
         this.logger.log('========================================================');
         this.logger.log('STARTING ETL PIPELINE EXECUTION');
@@ -95,15 +79,53 @@ export class EtlPipelineService {
     async runEtlPipeline(context: ETLContext) {
         // TODO: implement the ETL pipeline
         // all tasks in one function
-        for (const chain of context.chains) {
-            const storeList = await this.dataAccess.extractStoreData(chain);
-            const transformer = this.transformerFactory.getTransformer(chain);
-            const transformedStoreList = transformer.transformStoreData(storeList);
-            console.log(`chain: ${chain}`);
-            console.log(`storeList: ${JSON.stringify(storeList[0], null, 2)}`);
-            console.log(`transformedStoreList: ${JSON.stringify(transformedStoreList, null, 2)}`);
-            // const upsertedStoreList = await this.dataAccess.upsertStoreList(transformedStoreList);
-            // const upsertedStoreList = await this.dataAccess.upsertStoreList(transformedStoreList);
+        try {
+            for (const chain of context.chains) {
+                const storeList = await this.dataAccess.extractStoreData(chain);
+                const transformer = this.transformerFactory.getTransformer(chain);
+                const transformedStoreList = transformer.transformStoreData(storeList);
+                console.log(`chain: ${chain}`);
+                console.log(`transformed ${transformedStoreList.length} stores`);
+
+                const chainData = await this.prisma.chain.upsert({
+                    where: { name: chain },
+                    update: { name: chain },
+                    create: { name: chain }
+                });
+
+
+                const stores$ = from(transformedStoreList);
+
+                // Process all stores concurrently (with a limit) and wait for completion
+                const processedStores = await firstValueFrom(
+                    stores$.pipe(
+                        mergeMap(
+                            (store) =>
+                                this.prisma.store.upsert({
+                                    where: {
+                                        chainId_name_address: {
+                                            chainId: chainData.id,
+                                            name: store.row_content.storename,
+                                            address: store.row_content.address,
+                                        },
+                                    },
+                                    update: {},
+                                    create: {
+                                        name: store.row_content.storename,
+                                        address: store.row_content.address,
+                                        chainId: chainData.id,
+                                    },
+                                }),
+                            5 // <-- concurrency limit
+                        ),
+                        toArray() // collect all results before completing
+                    )
+                );
+
+                this.logger.log(`Successfully upserted ${processedStores.length} stores for chain ${chain}`);
+            }
+        } catch (error) {
+            this.logger.error(`Failed to run ETL pipeline: ${error.message}`);
         }
     }
 }

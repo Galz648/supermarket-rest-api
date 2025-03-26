@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RawFileContent } from '../data-access.service.js';
 import { ShufersalItem, ShufersalStore, ShufersalStoreSchema } from '../schemas/shufersal-schema.js';
-import { Transformer } from './transfomer.js';
+import { Transformer } from './transformer.js';
 
 /**
  * Service that transforms raw Shufersal data into structured formats.
