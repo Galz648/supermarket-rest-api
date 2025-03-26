@@ -31,3 +31,21 @@ export const ShufersalItemSchema = z.object({
 
 export type ShufersalItem = z.infer<typeof ShufersalItemSchema>;
 
+// Store schema
+export const ShufersalStoreSchema = z.object({
+    row_content: z.object({
+        chainid: z.string(),
+        lastupdatedate: z.string(),
+        subchainid: z.string(),
+        storeid: z.string(),
+        storetype: z.string(),
+        chainname: z.string(),
+        subchainname: z.string(),
+        storename: z.string(),
+        address: z.string(),
+        city: z.string(),
+        zipcode: z.string()
+    }),
+});
+
+export type ShufersalStore = z.infer<typeof ShufersalStoreSchema>;

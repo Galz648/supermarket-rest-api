@@ -78,10 +78,11 @@ export class EtlPipelineService {
         // all tasks in one function
         for (const chain of context.chains) {
             const storeList = await this.dataAccess.extractStoreData(chain);
-
+            const transformedStoreList = this.shufersalTransformer.transformStoreData(storeList);
             console.log(`chain: ${chain}`);
-            console.log(`storeList: ${JSON.stringify(storeList, null, 2)}`);
-            // const transformedStoreList = await this.shufersalTransformer.transformStoreData(storeList);
+            console.log(`storeList: ${JSON.stringify(storeList[0], null, 2)}`);
+            console.log(`transformedStoreList: ${JSON.stringify(transformedStoreList, null, 2)}`);
+            // const upsertedStoreList = await this.dataAccess.upsertStoreList(transformedStoreList);
             // const upsertedStoreList = await this.dataAccess.upsertStoreList(transformedStoreList);
         }
     }
