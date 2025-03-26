@@ -2,7 +2,26 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { DataAccessService, SupermarketChain } from './data-access.service.js';
 import { ShufersalTransformerService } from './transformers/shufersal-transformer.service.js';
+import { Transformer } from './transformers/transfomer.js';
 
+
+@Injectable()
+class TransformerFactory {
+    private readonly transformers: Map<SupermarketChain, Transformer> = new Map();
+
+    constructor(private readonly shufersalTransformer: ShufersalTransformerService) {
+        this.transformers.set(SupermarketChain.SHUFERSAL, shufersalTransformer);
+    }
+
+    getTransformer(chain: SupermarketChain): Transformer {
+        if (!this.transformers.has(chain)) {
+            throw new Error(`No transformer found for chain: ${chain}`);
+        }
+        else {
+            return this.transformers.get(chain)
+        }
+    }
+}
 
 interface ETLContext {
     chains: SupermarketChain[]
@@ -17,7 +36,7 @@ export class EtlPipelineService {
 
     constructor(
         private readonly dataAccess: DataAccessService,
-        private readonly shufersalTransformer: ShufersalTransformerService,
+        private readonly transformerFactory: TransformerFactory,
     ) { }
 
 
@@ -78,7 +97,8 @@ export class EtlPipelineService {
         // all tasks in one function
         for (const chain of context.chains) {
             const storeList = await this.dataAccess.extractStoreData(chain);
-            const transformedStoreList = this.shufersalTransformer.transformStoreData(storeList);
+            const transformer = this.transformerFactory.getTransformer(chain);
+            const transformedStoreList = transformer.transformStoreData(storeList);
             console.log(`chain: ${chain}`);
             console.log(`storeList: ${JSON.stringify(storeList[0], null, 2)}`);
             console.log(`transformedStoreList: ${JSON.stringify(transformedStoreList, null, 2)}`);

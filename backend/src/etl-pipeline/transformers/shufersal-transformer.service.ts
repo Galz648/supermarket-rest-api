@@ -1,14 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RawFileContent } from '../data-access.service.js';
 import { ShufersalItem, ShufersalStore, ShufersalStoreSchema } from '../schemas/shufersal-schema.js';
-
+import { Transformer } from './transfomer.js';
 
 /**
  * Service that transforms raw Shufersal data into structured formats.
  * This includes functionality for prices, promotions, and store information.
  */
 @Injectable()
-export class ShufersalTransformerService {
+export class ShufersalTransformerService implements Transformer {
     private readonly logger = new Logger(ShufersalTransformerService.name);
 
     /**
@@ -60,22 +60,4 @@ export class ShufersalTransformerService {
         // This can be customized in the future if store data needs different handling
         return this.transformItems(storeData, (row) => ShufersalStoreSchema.parse(row));
     }
-
-    /**
-     * Map a validated price row to the output format
-     */
-    // private mapPriceItemToOutputFormat(row: RawFileContent): ShufersalItem {
-    //     const content = row.row_content;
-
-    //     return {
-    //         chainid: String(content.chainid || ''),
-    //         storeid: String(content.storeid || ''),
-    //         itemcode: String(content.itemcode || ''),
-    //         itemname: String(content.itemname || ''),
-    //         itemprice: content.itemprice ? parseFloat(String(content.itemprice)) : null,
-    //         rawItem: {
-    //             ...content
-    //         }
-    //     };
-    // }
 }
