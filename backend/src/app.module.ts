@@ -5,6 +5,7 @@ import { ChainsModule } from './chains/chains.module.js';
 import { ItemsModule } from './items/items.module.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
+import { EtlPipelineModule } from './etl-pipeline/etl-pipeline.module.js';
 
 @Module({
     imports: [
@@ -14,6 +15,7 @@ import { AppService } from './app.service.js';
         PrismaModule,
         ChainsModule,
         ItemsModule,
+        EtlPipelineModule,
     ],
     controllers: [AppController],
     providers: [AppService],
