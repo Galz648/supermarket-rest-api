@@ -10,6 +10,7 @@ datasource db {
 
 model Item {
     id       String      @id @default(auto()) @map("_id") @db.ObjectId
+    itemCode String      @unique //TODO: handle duplicate
     name     String
     unit     String
     category String
@@ -24,23 +25,30 @@ model Chain {
 }
 
 model Store {
-    id      String      @id @default(auto()) @map("_id") @db.ObjectId
-    name    String
-    chain   Chain       @relation(fields: [chainId], references: [id], onDelete: Cascade)
-    chainId String      @db.ObjectId
-    address String
-    prices  ItemPrice[]
+    // not generated since it's not a unique identifier - determined in the data pipeline
+    storeId   String      @id @map("_id")
+    name      String
+    chain     Chain       @relation(fields: [chainName], references: [name], onDelete: Cascade)
+    chainName String
+    address   String
+    prices    ItemPrice[]
+    city      String      @unique
+    zipCode   String      @unique
 
-    @@unique([chainId, name, address], name: "chainId_name_address")
+    @@unique([chainName, storeId], name: "chainName_storeId")
 }
 
 model ItemPrice {
     id        String   @id @default(auto()) @map("_id") @db.ObjectId
     item      Item     @relation(fields: [itemId], references: [id])
     itemId    String   @db.ObjectId
+    itemCode  String   @unique
     price     Float
     currency  String
-    store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
-    storeId   String   @db.ObjectId
+    store     Store    @relation(fields: [storeId, chainName], references: [storeId, chainName], onDelete: Cascade)
+    storeId   String
+    chainName String
     timestamp DateTime @default(now())
+
+    @@unique([itemId, storeId, chainName, timestamp], name: "unique_item_store_chain_timestamp")
 }

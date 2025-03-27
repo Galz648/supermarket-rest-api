@@ -79,7 +79,6 @@ export class DataAccessService {
             timeout: 10000
         });
     }
-
     /**
      * Check the health of the supermarket data service
      */
@@ -95,7 +94,9 @@ export class DataAccessService {
             throw new Error(errorMsg);
         }
     }
-
+    async extractProductData(chain: SupermarketChain): Promise<RawFileContent[]> {
+        return this.extractFilesByFileType(chain, FileType.PRICE_FULL_FILE);
+    }
     /**
      * Get list of available supermarket chains
      */
@@ -120,7 +121,7 @@ export class DataAccessService {
      * @param chain The chain identifier
      * @param fileType Optional file type filter
      */
-    async listChainFileByFileType(chain: SupermarketChain, fileType: FileType): Promise<string[]> {
+    async listChainFilesByFileType(chain: SupermarketChain, fileType: FileType): Promise<string[]> {
         try {
             this.logger.log(`Getting files for chain ${chain} and file type ${fileType}`);
 
@@ -181,10 +182,9 @@ export class DataAccessService {
      */
 
 
-
-    private async extractFilesByPattern(chain: SupermarketChain, fileType: FileType): Promise<RawFileContent[]> {
-
-        const files = await this.listChainFileByFileType(chain, fileType);
+    // TODO: improve naming
+    private async extractFilesByFileType(chain: SupermarketChain, fileType: FileType): Promise<RawFileContent[]> {
+        const files = await this.listChainFilesByFileType(chain, fileType);
         const rows = await Promise.all(files.map(file => this.fetchFileContent(chain, file)));
         return rows.flat();
     }
@@ -193,6 +193,6 @@ export class DataAccessService {
      */
     async extractStoreData(chain: SupermarketChain): Promise<RawFileContent[]> {
         this.logger.log(`Extracting store data for chain ${chain}...`);
-        return this.extractFilesByPattern(chain, FileType.STORE_FILE);
+        return this.extractFilesByFileType(chain, FileType.STORE_FILE);
     }
 } 
