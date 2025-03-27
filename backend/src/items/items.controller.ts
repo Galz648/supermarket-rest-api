@@ -1,14 +1,11 @@
 import {
   Controller,
   Get,
-  Post,
-  Body,
   Param,
   Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { ItemsService } from './items.service.js';
-import { CreateItemDto } from './dto/create-item.dto.js';
 
 @ApiTags('items')
 @Controller('items')
@@ -22,13 +19,6 @@ export class ItemsController {
     return this.itemsService.findAll();
   }
 
-  @Post()
-  @ApiOperation({ summary: 'Create a new item' })
-  @ApiResponse({ status: 201, description: 'The item has been successfully created.' })
-  create(@Body() createItemDto: CreateItemDto) {
-    return this.itemsService.create(createItemDto);
-  }
-
   @Get('search')
   @ApiOperation({ summary: 'Search for items' })
   @ApiQuery({ name: 'q', required: true, type: String })
@@ -37,6 +27,22 @@ export class ItemsController {
     return this.itemsService.search(query);
   }
 
+  @Get('barcode/:barcode')
+  @ApiOperation({ summary: 'Get an item by barcode' })
+  @ApiParam({ name: 'barcode', description: 'Item Barcode' })
+  @ApiResponse({ status: 200, description: 'Return the item.' })
+  @ApiResponse({ status: 404, description: 'Item not found.' })
+  findByBarcode(@Param('barcode') barcode: string) {
+    return this.itemsService.findByBarcode(barcode);
+  }
+
+  @Get('name/:name')
+  @ApiOperation({ summary: 'Get items by name' })
+  @ApiParam({ name: 'name', description: 'Item name' })
+  @ApiResponse({ status: 200, description: 'Return items matching the name.' })
+  findByName(@Param('name') name: string) {
+    return this.itemsService.findByName(name);
+  }
   @Get(':id')
   @ApiOperation({ summary: 'Get an item by id' })
   @ApiParam({ name: 'id', description: 'Item ID' })

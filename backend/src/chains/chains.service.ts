@@ -27,31 +27,4 @@ export class ChainsService {
 
     return chain;
   }
-
-  async createChain(data: { name: string }) {
-    return this.prisma.chain.create({
-      data,
-    });
-  }
-
-  async updateChain(id: string, data: { name?: string }) {
-    const chain = await this.prisma.chain.findUnique({ where: { id } });
-    if (!chain) {
-      throw new NotFoundException(`Chain with ID ${id} not found`);
-    }
-    return this.prisma.chain.update({
-      where: { id },
-      data,
-    });
-  }
-
-  async deleteChain(id: string) {
-    const chain = await this.prisma.chain.findUnique({ where: { id } });
-    if (!chain) {
-      throw new NotFoundException(`Chain with ID ${id} not found`);
-    }
-    return this.prisma.chain.delete({
-      where: { id },
-    });
-  }
 } 

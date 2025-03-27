@@ -6,7 +6,7 @@ import { ItemsModule } from './items/items.module.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { EtlPipelineModule } from './etl-pipeline/etl-pipeline.module.js';
-
+import { StoresModule } from './stores/stores.module.js';
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -15,6 +15,7 @@ import { EtlPipelineModule } from './etl-pipeline/etl-pipeline.module.js';
         PrismaModule,
         ChainsModule,
         ItemsModule,
+        StoresModule,
         EtlPipelineModule,
     ],
     controllers: [AppController],

@@ -5,7 +5,7 @@ import { TransformerFactory } from './transformers/transformer-factory.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { from, mergeMap, toArray } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
-
+import { getSupportedChains } from './data-access.service.js';
 interface ETLContext {
     chains: SupermarketChain[]
 }
@@ -27,7 +27,7 @@ export class EtlPipelineService {
     async determineChainsToProcess(): Promise<SupermarketChain[]> {
         try {
             const availableChains = await this.dataAccess.listAvailableChains();
-            const supportedChains = this.dataAccess.getSupportedChains();
+            const supportedChains = getSupportedChains();
 
             // Filter and cast valid chains to SupermarketChain enum
             // TODO: determine this is the correct way to do this
@@ -66,19 +66,93 @@ export class EtlPipelineService {
                 chains: chainsToProcess
             };
 
-            // run the ETL pipeline for each context
-            await this.runEtlPipeline(context);
+            // write a task runner with rxjs
 
+            const tasks = [
+                // run the ETL pipeline for each context
+                await this.upsertStoresPipeline(context),
+                // await this.upsertProductsPipeline(context),
 
-            this.logger.log('ETL PIPELINE COMPLETED');
+            ]
+
+            tasks.forEach(async (task) => {
+                await task;
+            });
+
         } catch (error) {
             this.logger.error(`ETL PIPELINE FAILED: ${error.message}`);
         }
     }
 
-    async runEtlPipeline(context: ETLContext) {
+
+    async upsertProductsPipeline(context: ETLContext) {
         // TODO: implement the ETL pipeline
-        // all tasks in one function
+        try {
+            for (const chain of context.chains) {
+                const productList = await this.dataAccess.extractProductData(chain);
+                const transformer = this.transformerFactory.getTransformer(chain);
+                const transformedProductList = transformer.transformProductData(productList);
+                console.log(`chain: ${chain}`);
+                console.log(`transformed ${transformedProductList.length} products`);
+                return await firstValueFrom(
+                    from(transformedProductList).pipe(
+                        mergeMap(
+                            async (product) => {
+                                // First upsert the item
+                                const item = await this.prisma.item.upsert({
+                                    where: { itemCode: product.itemCode },
+                                    update: {
+                                        name: product.itemName,
+                                        unit: product.itemUnitOfMeasure,
+                                        category: product.itemStatus,
+                                        brand: product.manufacturerName
+                                    },
+                                    create: {
+                                        itemCode: product.itemCode,
+                                        name: product.itemName,
+                                        unit: product.itemUnitOfMeasure,
+                                        category: product.itemStatus,
+                                        brand: product.manufacturerName
+                                    }
+                                });
+
+                                // Then create/upsert the price data
+                                return this.prisma.itemPrice.upsert({
+                                    where: {
+                                        unique_item_store_timestamp: {
+                                            itemId: item.id,
+                                            storeId: product.storeId,
+                                            timestamp: new Date(Date.now())
+                                        }
+                                    },
+                                    update: {
+                                        price: product.itemPrice,
+                                        currency: "ILS", // Default currency for Israel TODO: determine if this is the correct way to do this
+                                    },
+                                    create: {
+                                        itemId: item.id,
+                                        itemCode: product.itemCode,
+                                        price: product.itemPrice,
+                                        currency: "ILS", // Default currency for Israel TODO: determine if this is the correct way to do this
+                                        storeId: product.storeId,
+                                        timestamp: new Date(Date.now())
+                                    }
+                                });
+                            },
+                            5 // <-- concurrency limit
+                        ),
+                        toArray() // collect all results before completing
+                    )
+                );
+
+
+            }
+        } catch (error) {
+            this.logger.error(`Failed to run ETL pipeline: ${error.message}`);
+        }
+    }
+    async upsertStoresPipeline(context: ETLContext) {
+        // TODO: implement the ETL pipeline
         try {
             for (const chain of context.chains) {
                 const storeList = await this.dataAccess.extractStoreData(chain);
@@ -87,7 +161,7 @@ export class EtlPipelineService {
                 console.log(`chain: ${chain}`);
                 console.log(`transformed ${transformedStoreList.length} stores`);
 
-                const chainData = await this.prisma.chain.upsert({
+                await this.prisma.chain.upsert({
                     where: { name: chain },
                     update: { name: chain },
                     create: { name: chain }
@@ -95,7 +169,7 @@ export class EtlPipelineService {
 
 
                 const stores$ = from(transformedStoreList);
-
+                // TODO: determine if this is the idiomatic rxjs way to do this
                 // Process all stores concurrently (with a limit) and wait for completion
                 const processedStores = await firstValueFrom(
                     stores$.pipe(
@@ -103,17 +177,25 @@ export class EtlPipelineService {
                             (store) =>
                                 this.prisma.store.upsert({
                                     where: {
-                                        chainId_name_address: {
-                                            chainId: chainData.id,
-                                            name: store.row_content.storename,
-                                            address: store.row_content.address,
+                                        chainName_storeId: {
+                                            chainName: chain,
+                                            storeId: store.storeId,
                                         },
                                     },
-                                    update: {},
+                                    update: { // TODO: determine if this needs a storeId field
+                                        name: store.name,
+                                        address: store.address,
+                                        chainName: chain,
+                                        city: store.city,
+                                        zipCode: store.zipCode,
+                                    },
                                     create: {
-                                        name: store.row_content.storename,
-                                        address: store.row_content.address,
-                                        chainId: chainData.id,
+                                        storeId: store.storeId,
+                                        name: store.name,
+                                        address: store.address,
+                                        city: store.city,
+                                        zipCode: store.zipCode,
+                                        chainName: chain,
                                     },
                                 }),
                             5 // <-- concurrency limit
