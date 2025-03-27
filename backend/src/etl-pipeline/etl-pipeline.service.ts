@@ -3,9 +3,9 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { DataAccessService, SupermarketChain } from './data-access.service.js';
 import { TransformerFactory } from './transformers/transformer-factory.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { first, from, mergeMap, toArray } from 'rxjs';
+import { from, mergeMap, toArray } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
-
+import { getSupportedChains } from './data-access.service.js';
 interface ETLContext {
     chains: SupermarketChain[]
 }
@@ -27,7 +27,7 @@ export class EtlPipelineService {
     async determineChainsToProcess(): Promise<SupermarketChain[]> {
         try {
             const availableChains = await this.dataAccess.listAvailableChains();
-            const supportedChains = this.dataAccess.getSupportedChains();
+            const supportedChains = getSupportedChains();
 
             // Filter and cast valid chains to SupermarketChain enum
             // TODO: determine this is the correct way to do this
@@ -50,7 +50,8 @@ export class EtlPipelineService {
     }
 
     // Run every 30 seconds for demo/testing purposes
-    @Cron(CronExpression.EVERY_30_SECONDS)
+    // @Cron(CronExpression.EVERY_MINUTE)
+    @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
     async runEtlPipelineJob() {
         this.logger.log('========================================================');
         this.logger.log('STARTING ETL PIPELINE EXECUTION');
@@ -70,8 +71,8 @@ export class EtlPipelineService {
 
             const tasks = [
                 // run the ETL pipeline for each context
-                // await this.upsertStoresPipeline(context),
-                await this.upsertProductsPipeline(context),
+                await this.upsertStoresPipeline(context),
+                // await this.upsertProductsPipeline(context),
 
             ]
 
@@ -119,11 +120,10 @@ export class EtlPipelineService {
                                 // Then create/upsert the price data
                                 return this.prisma.itemPrice.upsert({
                                     where: {
-                                        unique_item_store_chain_timestamp: {
+                                        unique_item_store_timestamp: {
                                             itemId: item.id,
                                             storeId: product.storeId,
-                                            chainName: product.chainId,
-                                            timestamp: new Date(product.updateDate)
+                                            timestamp: new Date(Date.now())
                                         }
                                     },
                                     update: {
@@ -136,8 +136,7 @@ export class EtlPipelineService {
                                         price: product.itemPrice,
                                         currency: "ILS", // Default currency for Israel TODO: determine if this is the correct way to do this
                                         storeId: product.storeId,
-                                        chainName: product.chainId,
-                                        timestamp: new Date(product.updateDate)
+                                        timestamp: new Date(Date.now())
                                     }
                                 });
                             },

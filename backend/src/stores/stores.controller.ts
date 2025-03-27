@@ -32,21 +32,30 @@ export class StoresController {
     return this.storesService.findByChain(chainName);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get a store by id' })
-  @ApiParam({ name: 'id', description: 'ID of the store' })
-  @ApiResponse({ status: 200, description: 'Return the store.' })
-  @ApiResponse({ status: 404, description: 'Store not found.' })
-  findOne(@Param('id') id: string) {
-    return this.storesService.findOne(id);
-  }
+  // @Get(':id')
+  // @ApiOperation({ summary: 'Get a store by id' })
+  // @ApiParam({ name: 'id', description: 'ID of the store' })
+  // @ApiResponse({ status: 200, description: 'Return the store.' })
+  // @ApiResponse({ status: 404, description: 'Store not found.' })
+  // findOne(@Param('id') id: string) {
+  //   return this.storesService.findOne(id);
+  // }
 
-  @Get(':id/prices')
-  @ApiOperation({ summary: 'Get all prices for items in a specific store' })
-  @ApiParam({ name: 'id', description: 'ID of the store' })
-  @ApiResponse({ status: 200, description: 'Return prices for items in the store.' })
-  @ApiResponse({ status: 404, description: 'Store not found.' })
-  getStoreItemPrices(@Param('id') id: string) {
-    return this.storesService.getStoreItemPrices(id);
+  // @Get(':id/prices')
+  // @ApiOperation({ summary: 'Get all prices for items in a specific store' })
+  // @ApiParam({ name: 'id', description: 'ID of the store' })
+  // @ApiResponse({ status: 200, description: 'Return prices for items in the store.' })
+  // @ApiResponse({ status: 404, description: 'Store not found.' })
+  // getStoreItemPrices(@Param('id') id: string) {
+  //   return this.storesService.getStoreItemPrices(id);
+  // }
+
+  @Get('city/:city')
+  @ApiOperation({ summary: 'Get stores by city' })
+  @ApiParam({ name: 'city', description: 'City name' })
+  @ApiResponse({ status: 200, description: 'Return stores for the specified city.' })
+  @ApiResponse({ status: 404, description: 'City not found.' })
+  getStoreByCity(@Param('city') city: string, @Query('chain') chainName: string) {
+    return this.storesService.findByCity(city, chainName);
   }
 }

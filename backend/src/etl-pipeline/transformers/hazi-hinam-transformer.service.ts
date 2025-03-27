@@ -1,23 +1,25 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RawFileContent } from '../data-access.service.js';
-import { ShufersalProduct, ShufersalStore, ShufersalProductSchema, ShufersalStoreSchema } from '../schemas/shufersal-schema.js';
+import { HaziHinamProduct, HaziHinamStore, HaziHinamProductSchema, HaziHinamStoreSchema } from '../schemas/hazi-hinam-schema.js';
 import { Transformer } from './transformer.js';
 import { UniformItem } from '../schemas/item-uniform-schema.js';
 import { UniformStore } from '../schemas/store-uniform-schema.js';
 
 /**
- * Service that transforms raw Shufersal data into structured formats.
+ * Service that transforms raw Hazi-Hinam data into structured formats.
  */
 @Injectable()
-export class ShufersalTransformerService implements Transformer {
+export class HaziHinamTransformerService implements Transformer {
+    private readonly logger = new Logger(HaziHinamTransformerService.name);
+
     transformProductData(productData: RawFileContent[]): UniformItem[] {
         if (!productData || !Array.isArray(productData) || productData.length === 0) {
             this.logger.warn('No product data to transform');
             return [];
         }
 
-        // First parse the raw data into ShufersalProduct objects
-        const products = this.transformItems(productData, (row) => ShufersalProductSchema.parse(row));
+        // First parse the raw data into HaziHinamProduct objects
+        const products = this.transformItems(productData, (row) => HaziHinamProductSchema.parse(row));
 
         // Then map to the standard format
         const uniformProducts = products.map(product => this.uniformMapProduct(product));
@@ -26,38 +28,40 @@ export class ShufersalTransformerService implements Transformer {
     }
 
     /**
-     * Maps a ShufersalProduct to the uniform product format
-     * @param product The ShufersalProduct to map
+     * Maps a HaziHinamProduct to the uniform product format
+     * @param product The HaziHinamProduct to map
      * @returns UniformItem with standardized fields
      */
-    uniformMapProduct(product: ShufersalProduct): UniformItem {
+    uniformMapProduct(product: HaziHinamProduct): UniformItem {
+        // Safe conversion to make sure we handle both string and number values
+        const getNumberValue = (value: string | number): number => {
+            return typeof value === 'string' ? parseFloat(value) : value;
+        };
+
         return {
             chainId: product.row_content.chainid,
             storeId: product.row_content.storeid,
             itemCode: product.row_content.itemcode,
             itemName: product.row_content.itemname,
-            manufacturerName: product.row_content.manufacturername,
+            manufacturerName: product.row_content.manufacturename,
             manufactureCountry: product.row_content.manufacturecountry,
-            itemPrice: parseFloat(product.row_content.itemprice),
-            itemQuantity: parseFloat(product.row_content.quantity),
+            itemPrice: getNumberValue(product.row_content.itemprice),
+            itemQuantity: getNumberValue(product.row_content.quantity),
             itemUnitOfMeasure: product.row_content.unitofmeasure,
-            itemUnitOfMeasurePrice: parseFloat(product.row_content.unitofmeasureprice),
+            itemUnitOfMeasurePrice: getNumberValue(product.row_content.unitofmeasureprice),
             itemStatus: product.row_content.itemstatus,
-            updateDate: product.row_content.priceupdatedate,
+            updateDate: product.row_content.priceupdatetime,
         };
     }
 
-    private readonly logger = new Logger(ShufersalTransformerService.name);
-
     /**
      * Generic method to transform any type of item data into structured objects
-     * This provides flexibility for different file types and use cases
      * 
      * @param itemData Raw item data from the API
      * @param mapFunction Optional custom mapping function
      * @returns Array of transformed items
      */
-    transformItems<T extends ShufersalProduct | ShufersalStore>(
+    transformItems<T extends HaziHinamProduct | HaziHinamStore>(
         itemData: RawFileContent[],
         mapFunction: (row: RawFileContent) => T
     ): T[] {
@@ -84,7 +88,13 @@ export class ShufersalTransformerService implements Transformer {
         this.logger.log(`Successfully transformed ${items.length} items`);
         return items;
     }
-    toUniformStore(store: ShufersalStore): UniformStore {
+
+    /**
+     * Maps a HaziHinamStore to the uniform store format
+     * @param store The HaziHinamStore to map
+     * @returns UniformStore with standardized fields
+     */
+    toUniformStore(store: HaziHinamStore): UniformStore {
         return {
             chainId: store.row_content.chainid,
             storeId: store.row_content.storeid,
@@ -93,7 +103,7 @@ export class ShufersalTransformerService implements Transformer {
             city: store.row_content.city,
             zipCode: store.row_content.zipcode,
             subChainId: store.row_content.subchainid,
-            subChainName: store.row_content.subchainname,
+            subChainName: '', // Not available in HaziHinam data
             storeType: store.row_content.storetype,
         }
     }
@@ -104,11 +114,9 @@ export class ShufersalTransformerService implements Transformer {
             return [];
         }
 
-        const stores = this.transformItems(storeData, (row) => ShufersalStoreSchema.parse(row));
+        const stores = this.transformItems(storeData, (row) => HaziHinamStoreSchema.parse(row));
 
         // Map to the uniform store format
         return stores.map(store => this.toUniformStore(store));
-
     }
-
-}
+} 

@@ -25,15 +25,15 @@ model Chain {
 }
 
 model Store {
-    // not generated since it's not a unique identifier - determined in the data pipeline
-    storeId   String      @id @map("_id")
+    id        String      @id @default(auto()) @map("_id") @db.ObjectId // unique Mongo ID
+    storeId   String
     name      String
     chain     Chain       @relation(fields: [chainName], references: [name], onDelete: Cascade)
     chainName String
     address   String
     prices    ItemPrice[]
-    city      String      @unique
-    zipCode   String      @unique
+    city      String
+    zipCode   String
 
     @@unique([chainName, storeId], name: "chainName_storeId")
 }
@@ -45,10 +45,10 @@ model ItemPrice {
     itemCode  String   @unique
     price     Float
     currency  String
-    store     Store    @relation(fields: [storeId, chainName], references: [storeId, chainName], onDelete: Cascade)
-    storeId   String
-    chainName String
+    store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+    storeId   String   @db.ObjectId     // TODO: determine if this should be a Many to Many relationship or a One to Many relationship (item price can only have one store, but a store can have many item prices)
     timestamp DateTime @default(now())
 
-    @@unique([itemId, storeId, chainName, timestamp], name: "unique_item_store_chain_timestamp")
+    @@unique([itemId, storeId, timestamp], name: "unique_item_store_timestamp")
 }

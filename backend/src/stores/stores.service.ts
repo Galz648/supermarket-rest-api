@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 @Injectable()
@@ -16,21 +16,6 @@ export class StoresService {
         });
     }
 
-    async findOne(id: string) {
-        const store = await this.prisma.store.findUnique({
-            where: { storeId: id },
-            include: {
-                chain: true,
-            },
-        });
-
-        if (!store) {
-            throw new NotFoundException(`Store with ID ${id} not found`);
-        }
-
-        return store;
-    }
-
     async findByChain(chainName: string) {
         return this.prisma.store.findMany({
             where: {
@@ -45,36 +30,37 @@ export class StoresService {
         });
     }
 
-    async getStoreItemPrices(storeId: string) {
-        const store = await this.prisma.store.findUnique({
-            where: { storeId },
-        });
+    // async getStoreItemPrices(storeId: string) {
+    //     const store = await this.prisma.store.findUnique({
+    //         where: { storeId },
+    //     });
 
-        if (!store) {
-            throw new NotFoundException(`Store with ID ${storeId} not found`);
-        }
+    //     if (!store) {
+    //         throw new NotFoundException(`Store with ID ${storeId} not found`);
+    //     }
 
-        return this.prisma.itemPrice.findMany({
-            where: {
-                storeId: store.storeId,
-                chainName: store.chainName,
-            },
-            include: {
-                item: true,
-            },
-            orderBy: {
-                timestamp: 'desc',
-            },
-        });
-    }
+    //     return this.prisma.itemPrice.findMany({
+    //         where: {
+    //             storeId: store.storeId,
+    //             chainName: store.chainName,
+    //         },
+    //         include: {
+    //             item: true,
+    //         },
+    //         orderBy: {
+    //             timestamp: 'desc',
+    //         },
+    //     });
+    // }
 
-    async findByCity(city: string) {
+    async findByCity(city: string, chainName: string) {
         return this.prisma.store.findMany({
             where: {
                 address: {
                     contains: city,
                     mode: 'insensitive'
-                }
+                },
+                chainName: chainName,
             },
             include: {
                 chain: true,

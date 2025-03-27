@@ -5,6 +5,12 @@ import { PrismaService } from '../prisma/prisma.service.js';
 export class ItemsService {
   constructor(private prisma: PrismaService) { }
 
+  async findByName(name: string) {
+    return this.prisma.item.findMany({
+      where: { name: { contains: name, mode: 'insensitive' } },
+    });
+  }
+
   async findAll() {
     // Simplified to just return all items without pagination
     const items = await this.prisma.item.findMany({
@@ -32,6 +38,28 @@ export class ItemsService {
 
     if (!item) {
       throw new NotFoundException(`Item with ID ${id} not found`);
+    }
+
+    return item;
+  }
+
+  async findByBarcode(barcode: string) {
+    const item = await this.prisma.item.findFirst({
+      where: { itemCode: barcode },
+      include: {
+        prices: {
+          include: {
+            store: true,
+          },
+          orderBy: {
+            timestamp: 'desc',
+          },
+        },
+      },
+    });
+
+    if (!item) {
+      throw new NotFoundException(`Item with barcode ${barcode} not found`);
     }
 
     return item;

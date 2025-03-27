@@ -30,14 +30,20 @@ export interface ServiceHealth {
 /**
  * Supported supermarket chains
  */
+// TODO: should be moved to a shared location
+
 export enum SupermarketChain {
     SHUFERSAL = 'SHUFERSAL',
+    HAZI_HINAM = 'HAZI_HINAM',
     // Add more chains here as needed
     // RAMI_LEVY = 'RAMI_LEVY',
     // VICTORY = 'VICTORY',
     // YOCHANANOF = 'YOCHANANOF',
 }
 
+export function getSupportedChains(): SupermarketChain[] {
+    return Object.values(SupermarketChain);
+}
 /**
  * Available file types for extraction
  */
@@ -161,13 +167,6 @@ export class DataAccessService {
             this.logger.error(errorMsg);
             return [];
         }
-    }
-
-    /**
-     * Get supported chains (chains we have implementations for)
-     */
-    getSupportedChains(): SupermarketChain[] {
-        return Object.values(SupermarketChain);
     }
 
     /**

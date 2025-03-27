@@ -1,8 +1,6 @@
 import {
   Controller,
   Get,
-  Post,
-  Body,
   Param,
   Query,
 } from '@nestjs/common';
@@ -29,6 +27,22 @@ export class ItemsController {
     return this.itemsService.search(query);
   }
 
+  @Get('barcode/:barcode')
+  @ApiOperation({ summary: 'Get an item by barcode' })
+  @ApiParam({ name: 'barcode', description: 'Item Barcode' })
+  @ApiResponse({ status: 200, description: 'Return the item.' })
+  @ApiResponse({ status: 404, description: 'Item not found.' })
+  findByBarcode(@Param('barcode') barcode: string) {
+    return this.itemsService.findByBarcode(barcode);
+  }
+
+  @Get('name/:name')
+  @ApiOperation({ summary: 'Get items by name' })
+  @ApiParam({ name: 'name', description: 'Item name' })
+  @ApiResponse({ status: 200, description: 'Return items matching the name.' })
+  findByName(@Param('name') name: string) {
+    return this.itemsService.findByName(name);
+  }
   @Get(':id')
   @ApiOperation({ summary: 'Get an item by id' })
   @ApiParam({ name: 'id', description: 'Item ID' })

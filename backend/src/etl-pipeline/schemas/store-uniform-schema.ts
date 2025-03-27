@@ -16,7 +16,6 @@ export const UniformStoreSchema = z.object({
     subChainId: z.string(),
     subChainName: z.string(),
     storeType: z.string().optional(),
-    lastUpdateDate: z.string(),
 });
 
 export type UniformStore = z.infer<typeof UniformStoreSchema>;
