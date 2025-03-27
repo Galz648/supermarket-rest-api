@@ -5,8 +5,15 @@ import { PrismaService } from '../prisma/prisma.service.js';
 export class StoresService {
     constructor(private prisma: PrismaService) { }
 
-    async findAll() {
+    async findAll(city: string, chainName: string) {
         return this.prisma.store.findMany({
+            where: {
+                address: {
+                    contains: city,
+                    mode: 'insensitive'
+                },
+                chainName: chainName,
+            },
             include: {
                 chain: true,
             },

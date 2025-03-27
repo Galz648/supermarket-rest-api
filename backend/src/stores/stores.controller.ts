@@ -16,11 +16,9 @@ export class StoresController {
   @ApiOperation({ summary: 'Get all stores' })
   @ApiResponse({ status: 200, description: 'Return all stores.' })
   @ApiQuery({ name: 'city', required: false, description: 'Filter stores by city' })
-  findAll(@Query('city') city?: string) {
-    if (city) {
-      return this.storesService.findByCity(city);
-    }
-    return this.storesService.findAll();
+  @ApiQuery({ name: 'chainName', required: false, description: 'Filter stores by chain name' })
+  findAll(@Query('city') city: string, @Query('chainName') chainName: string) {
+    return this.storesService.findAll(city, chainName);
   }
 
   @Get('chain/:chainName')
