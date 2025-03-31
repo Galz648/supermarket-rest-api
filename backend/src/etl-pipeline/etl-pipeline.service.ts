@@ -50,7 +50,7 @@ export class EtlPipelineService {
     // }
 
     // Run every 30 seconds for demo/testing purposes
-    @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+    @Cron(CronExpression.EVERY_12_HOURS)
     async runEtlPipelineJob() {
         this.logger.log('========================================================');
         this.logger.log('STARTING ETL PIPELINE EXECUTION');
@@ -152,6 +152,20 @@ export class EtlPipelineService {
         }
     }
 
+    // async upsertItemDiscountsPipeline(context: ETLContext) {
+    //     // TODO: implement the ETL pipeline
+    //     try {
+    //         for (const chain of context.chains) {
+    //             const itemDiscountList = await this.dataAccess.extractItemDiscountData(chain);
+    //             const transformer = this.transformerFactory.getTransformer(chain);
+    //             const transformedItemDiscountList = transformer.transformItemDiscountData(itemDiscountList);
+    //             console.log(`chain: ${chain}`);
+    //             console.log(`transformed ${transformedItemDiscountList.length} item discounts`);
+    //         }
+    //     } catch (error) {
+    //         this.logger.error(`Failed to run ETL pipeline: ${error.message}`);
+    //     }
+    // }
     // TODO: upsertItem
     async upsertStoresPipeline(context: ETLContext) {
         // TODO: implement the ETL pipeline
