@@ -39,15 +39,15 @@ export class EtlPipelineService {
             return [];
         }
     }
-    @Cron(CronExpression.EVERY_5_SECONDS)
-    async dataAccessHealthCheck() {
-        try {
-            const healthStatus = await this.dataAccess.checkServiceHealth();
-            this.logger.log(`DataAccessService health status: ${healthStatus.status}`);
-        } catch (error) {
-            this.logger.error(`Failed to check DataAccessService health: ${error.message}`);
-        }
-    }
+    // @Cron(CronExpression.EVERY_5_SECONDS)
+    // async dataAccessHealthCheck() {
+    //     try {
+    //         const healthStatus = await this.dataAccess.checkServiceHealth();
+    //         this.logger.log(`DataAccessService health status: ${healthStatus.status}`);
+    //     } catch (error) {
+    //         this.logger.error(`Failed to check DataAccessService health: ${error.message}`);
+    //     }
+    // }
 
     // Run every 30 seconds for demo/testing purposes
     @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
@@ -151,6 +151,8 @@ export class EtlPipelineService {
             this.logger.error(`Failed to run ETL pipeline: ${error.message}`);
         }
     }
+
+    // TODO: upsertItem
     async upsertStoresPipeline(context: ETLContext) {
         // TODO: implement the ETL pipeline
         try {
@@ -168,6 +170,7 @@ export class EtlPipelineService {
                 });
 
 
+                // TODO: determine if there is a more efficient prisma/rxjs/raw query way to do this
                 const stores$ = from(transformedStoreList);
                 // TODO: determine if this is the idiomatic rxjs way to do this
                 // Process all stores concurrently (with a limit) and wait for completion

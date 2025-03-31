@@ -14,48 +14,22 @@ export class ItemsController {
   constructor(private readonly itemsService: ItemsService) { }
 
   @Get()
-  @ApiOperation({ summary: 'Get all items with pagination' })
-  @ApiQuery({ name: 'page', required: false, description: 'Page number (1-based)', type: Number })
-  @ApiQuery({ name: 'limit', required: false, description: 'Number of items per page', type: Number })
-  @ApiResponse({
-    status: 200,
-    description: 'Returns paginated items with metadata',
-    schema: {
-      properties: {
-        items: { type: 'array', items: { $ref: '#/components/schemas/Item' } },
-        pagination: {
-          type: 'object',
-          properties: {
-            total: { type: 'number' },
-            page: { type: 'number' },
-            limit: { type: 'number' },
-            totalPages: { type: 'number' }
-          }
-        }
-      }
-    }
-  })
-  async findAll(
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-  ) {
-    return this.itemsService.findAll(page, limit);
+  @ApiOperation({ summary: 'Get all items' })
+  @ApiResponse({ status: 200, description: 'Returns all items' })
+  async findAll(): Promise<Item[]> {
+    return this.itemsService.findAll();
   }
 
   @Get('search')
-  @ApiOperation({ summary: 'Search items by name, brand, or category' })
-  @ApiQuery({ name: 'query', required: true, description: 'Search query string' })
-  @ApiQuery({ name: 'limit', required: false, description: 'Maximum number of results (default: 20)' })
-  @ApiQuery({ name: 'category', required: false, description: 'Filter by category' })
-  @ApiQuery({ name: 'brand', required: false, description: 'Filter by brand' })
+  @ApiOperation({ summary: 'Search items by name' })
+  @ApiQuery({ name: 'query', required: true, description: 'Search query' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Maximum number of results to return' })
   @ApiResponse({ status: 200, description: 'Returns matching items' })
   async search(
     @Query('query') query: string,
     @Query('limit') limit?: number,
-    @Query('category') category?: string,
-    @Query('brand') brand?: string,
   ): Promise<Item[]> {
-    return this.itemsService.search(query, limit, category, brand);
+    return this.itemsService.search(query, limit);
   }
 
   @Get('barcode/:barcode')

@@ -6,46 +6,23 @@ import { Prisma } from '@prisma/client';
 export class ItemsService {
   constructor(private prisma: PrismaService) { }
 
-  /**
-   * Get all items with pagination
-   * @param page - Page number (1-based)
-   * @param limit - Number of items per page
-   * @returns Object containing items and pagination metadata
-   */
-  async findAll(page: number = 1, limit: number = 20) {
-    const skip = (page - 1) * limit;
-
-    // Get total count for pagination
-    const total = await this.prisma.item.count({
-      where: {
-        itemCode: { not: '' }
-      }
-    });
-
-    // Get paginated items
-    const items = await this.prisma.item.findMany({
-      where: {
-        itemCode: { not: '' }
-      },
+  async findByName(name: string) {
+    return this.prisma.item.findMany({
+      where: { name: { contains: name, mode: 'insensitive' } },
+      take: 10,
       orderBy: { name: 'asc' },
-      skip,
-      take: limit,
     });
-
-    return {
-      items,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
   }
 
-  // TODO: Add price history aggregation (min, max, avg)
-  // TODO: Add price trend analysis
-  // TODO: Add store availability information
+  async findAll() {
+    // Simplified to just return all items without pagination
+    const items = await this.prisma.item.findMany({
+      orderBy: { name: 'asc' },
+    });
+
+    return items;
+  }
+
   async findOne(id: string) {
     const item = await this.prisma.item.findUnique({
       where: { id },
@@ -69,9 +46,6 @@ export class ItemsService {
     return item;
   }
 
-  // TODO: Add price history aggregation
-  // TODO: Add store availability information
-  // TODO: Add price comparison across stores
   async findByBarcode(barcode: string) {
     const item = await this.prisma.item.findFirst({
       where: { itemCode: barcode },
@@ -94,52 +68,23 @@ export class ItemsService {
     return item;
   }
 
-  /**
-   * Search for items by name, brand, or category
-   * @param query - Search query string (case-insensitive)
-   * @param limit - Maximum number of results to return (default: 20)
-   * @param category - Filter by category
-   * @param brand - Filter by brand
-   * @returns Array of matching items
-   */
-  async search(query: string, limit: number = 20, category?: string, brand?: string) {
-    // Ensure query is a valid string
-    const validQuery = query?.trim() || '';
+  async search(query: string, limit: number = 10) {
+    try {
+      const where: Prisma.ItemWhereInput = {
+        name: {
+          contains: query,
+          mode: 'insensitive',
+        },
+      };
 
-    if (!validQuery) {
-      return [];
-    }
-
-    const conditions: Prisma.ItemWhereInput[] = [
-      {
-        OR: [
-          { name: { contains: validQuery, mode: Prisma.QueryMode.insensitive } },
-          { brand: { contains: validQuery, mode: Prisma.QueryMode.insensitive } },
-          { category: { contains: validQuery, mode: Prisma.QueryMode.insensitive } },
-        ],
-      },
-    ];
-
-    // Add category filter if provided
-    if (category) {
-      conditions.push({
-        category: { contains: category, mode: Prisma.QueryMode.insensitive },
+      const items = await this.prisma.item.findMany({
+        where,
+        take: limit,
+        orderBy: { name: 'asc' },
       });
+      return items;
+    } catch (error) {
+      throw new Error(`Failed to search items: ${error.message}`);
     }
-
-    // Add brand filter if provided
-    if (brand) {
-      conditions.push({
-        brand: { contains: brand, mode: Prisma.QueryMode.insensitive },
-      });
-    }
-
-    return this.prisma.item.findMany({
-      where: {
-        AND: conditions,
-      },
-      take: limit,
-      orderBy: { name: 'asc' },
-    });
   }
 } 

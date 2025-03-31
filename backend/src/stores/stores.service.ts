@@ -6,20 +6,16 @@ import { Prisma } from '@prisma/client';
 export class StoresService {
     constructor(private prisma: PrismaService) { }
 
-    async findAll(cities?: string[], chains?: string[]) {
+    async findAll(city?: string, chain?: string) {
         const where: Prisma.StoreWhereInput = {};
 
-        if (cities && cities.length > 0) {
-            where.city = {
-                in: cities,
-                mode: 'insensitive'
-            };
+        if (city) {
+            where.city = city;
         }
 
-        if (chains && chains.length > 0) {
-            where.chainName = {
-                in: chains,
-                mode: 'insensitive'
+        if (chain) {
+            where.chain = {
+                name: chain
             };
         }
 
@@ -27,23 +23,6 @@ export class StoresService {
             where,
             include: {
                 chain: true
-            }
-        });
-    }
-
-    async findByChain(chainName: string) {
-        return this.prisma.store.findMany({
-            where: {
-                chainName: {
-                    contains: chainName,
-                    mode: 'insensitive'
-                }
-            },
-            include: {
-                chain: true
-            },
-            orderBy: {
-                name: 'asc'
             }
         });
     }
@@ -57,6 +36,20 @@ export class StoresService {
         });
     }
 
+    async getAllChains() {
+        return this.prisma.chain.findMany({
+            select: {
+                id: true,
+                name: true,
+                _count: {
+                    select: {
+                        stores: true
+                    }
+                }
+            }
+        });
+    }
+
     async getAllCities() {
         const stores = await this.prisma.store.findMany({
             select: {
@@ -66,5 +59,57 @@ export class StoresService {
         });
 
         return stores.map(store => store.city);
+    }
+
+    async findByChain(chainName: string) {
+        return this.prisma.store.findMany({
+            where: {
+                chainName,
+            },
+            include: {
+                chain: true,
+            },
+            orderBy: {
+                name: 'asc',
+            },
+        });
+    }
+
+    // async getStoreItemPrices(storeId: string) {
+    //     const store = await this.prisma.store.findUnique({
+    //         where: { storeId },
+    //     });
+
+    //     if (!store) {
+    //         throw new NotFoundException(`Store with ID ${storeId} not found`);
+    //     }
+
+    //     return this.prisma.itemPrice.findMany({
+    //         where: {
+    //             storeId: store.storeId,
+    //             chainName: store.chainName,
+    //         },
+    //         include: {
+    //             item: true,
+    //         },
+    //         orderBy: {
+    //             timestamp: 'desc',
+    //         },
+    //     });
+    // }
+
+    async findByCity(city: string, chainName: string) {
+        return this.prisma.store.findMany({
+            where: {
+                city: city,
+                chainName: chainName,
+            },
+            include: {
+                chain: true,
+            },
+            orderBy: {
+                name: 'asc',
+            },
+        });
     }
 }
