@@ -1,11 +1,13 @@
 import { PrismaClient } from '@prisma/client';
+import { faker } from '@faker-js/faker';
 
 export async function clearDatabase() {
     const prisma = new PrismaClient();
     try {
-        // await prisma.itemPrice.deleteMany({});
-        // await prisma.item.deleteMany({});
-        // await prisma.store.deleteMany({});
+        // Delete in correct order to handle foreign key constraints
+        await prisma.itemPrice.deleteMany({});
+        await prisma.item.deleteMany({});
+        await prisma.store.deleteMany({});
         await prisma.chain.deleteMany({});
     } finally {
         await prisma.$disconnect();
@@ -14,34 +16,84 @@ export async function clearDatabase() {
 
 export async function seedDatabase() {
     const prisma = new PrismaClient();
-    await prisma.chain.create({
-        data: {
-            name: 'Test Chain',
-            stores: {
-                create: [
-                    {
-                        name: 'Test Store 1',
-                        location: 'Location 1',
-                        prices: {
-                            create: [
-                                {
-                                    item: {
-                                        create: {
-                                            name: 'Test Item 1',
-                                            unit: 'kg',
-                                            category: 'Fruits',
-                                            brand: 'Brand A',
-                                        },
+    try {
+        // Create a test chain
+        const chain = await prisma.chain.create({
+            data: {
+                name: faker.company.name(),
+                stores: {
+                    create: [
+                        {
+                            storeId: faker.string.alphanumeric(8).toUpperCase(),
+                            name: faker.company.name(),
+                            address: faker.location.streetAddress(),
+                            city: faker.location.city(),
+                            zipCode: faker.location.zipCode(),
+                            prices: {
+                                create: [
+                                    {
+                                        itemCode: faker.string.alphanumeric(8).toUpperCase(),
+                                        price: faker.number.float({ min: 1, max: 100, fractionDigits: 2 }),
+                                        currency: 'USD',
+                                        item: {
+                                            create: {
+                                                itemCode: faker.string.alphanumeric(8).toUpperCase(),
+                                                name: faker.commerce.productName(),
+                                                unit: faker.helpers.arrayElement(['kg', 'piece', 'liter', 'g']),
+                                                category: faker.helpers.arrayElement(['Fruits', 'Vegetables', 'Dairy', 'Meat', 'Beverages']),
+                                                brand: faker.company.name(),
+                                            }
+                                        }
                                     },
-                                    price: 10.0,
-                                    currency: 'USD',
-                                },
-                            ],
+                                    {
+                                        itemCode: faker.string.alphanumeric(8).toUpperCase(),
+                                        price: faker.number.float({ min: 1, max: 100, fractionDigits: 2 }),
+                                        currency: 'USD',
+                                        item: {
+                                            create: {
+                                                itemCode: faker.string.alphanumeric(8).toUpperCase(),
+                                                name: faker.commerce.productName(),
+                                                unit: faker.helpers.arrayElement(['kg', 'piece', 'liter', 'g']),
+                                                category: faker.helpers.arrayElement(['Fruits', 'Vegetables', 'Dairy', 'Meat', 'Beverages']),
+                                                brand: faker.company.name(),
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
                         },
-                    },
-                ],
-            },
-        },
-    });
-    await prisma.$disconnect();
+                        {
+                            storeId: faker.string.alphanumeric(8).toUpperCase(),
+                            name: faker.company.name(),
+                            address: faker.location.streetAddress(),
+                            city: faker.location.city(),
+                            zipCode: faker.location.zipCode(),
+                            prices: {
+                                create: [
+                                    {
+                                        itemCode: faker.string.alphanumeric(8).toUpperCase(),
+                                        price: faker.number.float({ min: 1, max: 100, fractionDigits: 2 }),
+                                        currency: 'USD',
+                                        item: {
+                                            create: {
+                                                itemCode: faker.string.alphanumeric(8).toUpperCase(),
+                                                name: faker.commerce.productName(),
+                                                unit: faker.helpers.arrayElement(['kg', 'piece', 'liter', 'g']),
+                                                category: faker.helpers.arrayElement(['Fruits', 'Vegetables', 'Dairy', 'Meat', 'Beverages']),
+                                                brand: faker.company.name(),
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        });
+
+        return chain;
+    } finally {
+        await prisma.$disconnect();
+    }
 } 
