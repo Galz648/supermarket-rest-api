@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { RawFileContent } from '../data-access.service.js';
-import { HaziHinamProduct, HaziHinamStore, HaziHinamProductSchema, HaziHinamStoreSchema } from '../schemas/hazi-hinam-schema.js';
 import { Transformer } from './transformer.js';
-import { UniformItem } from '../schemas/item-uniform-schema.js';
-import { UniformStore } from '../schemas/store-uniform-schema.js';
+import { RawFileContent } from '../data-access.service.js';
+import { UniformItem } from '../schemas/uniform/index.js';
+import { HaziHinamProduct, HaziHinamStore, HaziHinamProductSchema, HaziHinamStoreSchema } from '../schemas/chains/hazi-hinam/index.js';
+import { UniformStore } from '../schemas/uniform/index.js';
 
 /**
  * Service that transforms raw Hazi-Hinam data into structured formats.
@@ -18,13 +18,22 @@ export class HaziHinamTransformerService implements Transformer {
             return [];
         }
 
-        // First parse the raw data into HaziHinamProduct objects
         const products = this.transformItems(productData, (row) => HaziHinamProductSchema.parse(row));
 
-        // Then map to the standard format
-        const uniformProducts = products.map(product => this.uniformMapProduct(product));
+        // Map to the uniform product format
+        return products.map(product => this.uniformMapProduct(product));
+    }
 
-        return uniformProducts;
+    transformStoreData(storeData: RawFileContent[]): UniformStore[] {
+        if (!storeData || !Array.isArray(storeData) || storeData.length === 0) {
+            this.logger.warn('No store data to transform');
+            return [];
+        }
+
+        const stores = this.transformItems(storeData, (row) => HaziHinamStoreSchema.parse(row));
+
+        // Map to the uniform store format
+        return stores.map(store => this.toUniformStore(store));
     }
 
     /**
@@ -102,21 +111,6 @@ export class HaziHinamTransformerService implements Transformer {
             address: store.row_content.address,
             city: store.row_content.city,
             zipCode: store.row_content.zipcode,
-            subChainId: store.row_content.subchainid,
-            subChainName: '', // Not available in HaziHinam data
-            storeType: store.row_content.storetype,
         }
-    }
-
-    transformStoreData(storeData: RawFileContent[]): UniformStore[] {
-        if (!storeData || !Array.isArray(storeData) || storeData.length === 0) {
-            this.logger.warn('No store data to transform');
-            return [];
-        }
-
-        const stores = this.transformItems(storeData, (row) => HaziHinamStoreSchema.parse(row));
-
-        // Map to the uniform store format
-        return stores.map(store => this.toUniformStore(store));
     }
 } 

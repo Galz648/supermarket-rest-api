@@ -7,7 +7,6 @@ import { TransformerFactory } from './transformers/transformer-factory.js';
 import { ShufersalTransformerService } from './transformers/shufersal-transformer.service.js';
 import { HaziHinamTransformerService } from './transformers/hazi-hinam-transformer.service.js';
 import { PrismaModule } from '../prisma/prisma.module.js';
-import { EtlPipelineController } from './etl-pipeline.controller.js';
 
 @Module({
     imports: [
@@ -15,7 +14,6 @@ import { EtlPipelineController } from './etl-pipeline.controller.js';
         ScheduleModule.forRoot(),
         PrismaModule,
     ],
-    controllers: [EtlPipelineController],
     providers: [
         EtlPipelineService,
         DataAccessService,

@@ -93,9 +93,6 @@ export class ShufersalTransformerService implements Transformer {
             address: store.row_content.address,
             city: store.row_content.city,
             zipCode: store.row_content.zipcode,
-            subChainId: store.row_content.subchainid,
-            subChainName: store.row_content.subchainname,
-            storeType: store.row_content.storetype,
         }
     }
 

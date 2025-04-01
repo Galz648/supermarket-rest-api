@@ -32,9 +32,6 @@ export const UniformStoreSchema = z.object({
     address: z.string(),
     city: z.string(),
     zipCode: z.string(),
-    subChainId: z.string(),
-    subChainName: z.string(),
-    storeType: z.string().optional(),
 });
 
 // Type inference
