@@ -77,4 +77,29 @@ export class ItemsService {
       throw new Error(`Failed to search items: ${error.message}`);
     }
   }
+
+  // TODO: this is a temporary solution
+  async getPriceByStoreIdAndItemId(chainName: string, storeId: string, itemId: string) {
+    const item = await this.prisma.item.findFirst({
+      where: { itemCode: itemId },
+    });
+    if (!item) {
+      throw new NotFoundException(`Item with ID ${itemId} not found`);
+    }
+
+    // find the chain id from the chain name
+    const chain = await this.prisma.chain.findFirst({
+      where: { name: chainName },
+    });
+    if (!chain) {
+      throw new NotFoundException(`Chain with name ${chainName} not found`);
+    }
+
+    return this.prisma.itemPrice.findFirst({
+      where: { chainId: chain.id, storeId, itemId: item.id },
+      include: {
+        store: true,
+      },
+    });
+  }
 } 

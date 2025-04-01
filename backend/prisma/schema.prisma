@@ -1,42 +1,44 @@
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "linux-arm64-openssl-1.1.x"]
+    provider      = "prisma-client-js"
+    binaryTargets = ["native", "linux-arm64-openssl-1.1.x"]
 }
 
 datasource db {
-  provider = "mongodb"
-  url      = env("DATABASE_URL")
+    provider = "mongodb"
+    url      = env("DATABASE_URL")
 }
 
 model Item {
-  id        String      @id @default(auto()) @map("_id") @db.ObjectId
-  itemCode  String      @unique //TODO: handle duplicate
-  name      String
-  unit      String
-  category  String
-  brand     String
-  prices    ItemPrice[]
-//   Promotion Promotion[]
+    id       String      @id @default(auto()) @map("_id") @db.ObjectId
+    itemCode String      @unique //TODO: handle duplicate
+    name     String
+    unit     String
+    category String
+    brand    String
+    prices   ItemPrice[]
+    //   Promotion Promotion[]
+    // ItemPromotion ItemPromotion[]
 }
 
 model Chain {
-  id     String  @id @default(auto()) @map("_id") @db.ObjectId
-  name   String  @unique
-  stores Store[]
+    id     String  @id @default(auto()) @map("_id") @db.ObjectId
+    name   String  @unique
+    stores Store[]
 }
 
 model Store {
-  id        String      @id @default(auto()) @map("_id") @db.ObjectId // unique Mongo ID
-  storeId   String
-  name      String
-  chain     Chain       @relation(fields: [chainName], references: [name], onDelete: Cascade)
-  chainName String
-  address   String
-  prices    ItemPrice[]
-  city      String
-  zipCode   String
+    id        String      @id @default(auto()) @map("_id") @db.ObjectId // unique Mongo ID
+    storeId   String
+    name      String
+    chain     Chain       @relation(fields: [chainName], references: [name], onDelete: Cascade)
+    chainName String
+    address   String
+    prices    ItemPrice[]
+    city      String
+    zipCode   String
+    // ItemPromotion ItemPromotion[]
 
-  @@unique([chainName, storeId], name: "chainName_storeId")
+    @@unique([chainName, storeId], name: "chainName_storeId")
 }
 
 // model ItemPrice {
@@ -55,21 +57,21 @@ model Store {
 // }
 
 model ItemPrice {
-  id       String @id @default(auto()) @map("_id") @db.ObjectId
-  itemId   String @db.ObjectId
-  item     Item   @relation(fields: [itemId], references: [id])
-  itemCode String // external ID, for redundancy/search
+    id       String @id @default(auto()) @map("_id") @db.ObjectId
+    itemId   String @db.ObjectId
+    item     Item   @relation(fields: [itemId], references: [id])
+    itemCode String // external ID, for redundancy/search
 
-  storeInternalId String @db.ObjectId
-  store Store @relation(fields: [storeInternalId], references: [id], onDelete: Cascade)
-  storeId String
+    storeInternalId String @db.ObjectId
+    store           Store  @relation(fields: [storeInternalId], references: [id], onDelete: Cascade)
+    storeId         String
 
-  chainId   String // optional: denormalized for easier querying
-  price     Float
-  currency  String
-  timestamp DateTime
+    chainId   String // optional: denormalized for easier querying
+    price     Float
+    currency  String
+    timestamp DateTime
 
-  @@unique([chainId, storeId, itemId, timestamp], name: "unique_price_entry")
+    @@unique([chainId, storeId, itemId, timestamp], name: "unique_price_entry")
 }
 
 // model Promotion {
@@ -77,4 +79,40 @@ model ItemPrice {
 //   itemId   String @db.ObjectId
 //   item     Item   @relation(fields: [itemId], references: [id])
 //   itemCode String // external ID, for redundancy/search
+// }
+
+// model ItemPromotion {
+//     id       String @id @default(auto()) @map("_id") @db.ObjectId
+//     itemId   String @db.ObjectId
+//     item     Item   @relation(fields: [itemId], references: [id])
+//     itemCode String // external ID, for redundancy/search
+
+//     // Store and Chain information
+//     storeInternalId String @db.ObjectId
+//     store           Store  @relation(fields: [storeInternalId], references: [id], onDelete: Cascade)
+//     storeId         String
+//     chainId         String // denormalized for easier querying
+
+//     // Promotion details
+//     promotionId           String
+//     description           String
+//     startDate             DateTime
+//     endDate               DateTime
+//     discountType          String // e.g., "percentage", "fixed", "buyXgetY"
+//     discountRate          Float?
+//     discountedPrice       Float?
+//     minimumQuantity       Float
+//     maximumQuantity       Float?
+//     minimumPurchaseAmount Float?
+
+//     // Promotion rules
+//     allowMultipleDiscounts Boolean @default(false)
+//     isWeightedPromotion    Boolean @default(false)
+//     additionalRestrictions String?
+
+//     // Metadata
+//     lastUpdated DateTime @default(now())
+//     timestamp   DateTime @default(now())
+
+//     @@unique([chainId, storeId, itemId, promotionId], name: "unique_promotion")
 // }
