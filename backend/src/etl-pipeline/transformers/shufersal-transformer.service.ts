@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RawFileContent } from '../data-access.service.js';
-import { ShufersalProduct, ShufersalStore, ShufersalProductSchema, ShufersalStoreSchema } from '../schemas/shufersal-schema.js';
+import { ShufersalProduct, ShufersalStore, ShufersalProductSchema, ShufersalStoreSchema } from '../schemas/chains/shufersal/index.js';
 import { Transformer } from './transformer.js';
-import { UniformItem } from '../schemas/item-uniform-schema.js';
-import { UniformStore } from '../schemas/store-uniform-schema.js';
+import { UniformItem } from '../schemas/uniform/index.js';
+import { UniformStore } from '../schemas/uniform/index.js';
 
 /**
  * Service that transforms raw Shufersal data into structured formats.
@@ -84,6 +84,7 @@ export class ShufersalTransformerService implements Transformer {
         this.logger.log(`Successfully transformed ${items.length} items`);
         return items;
     }
+
     toUniformStore(store: ShufersalStore): UniformStore {
         return {
             chainId: store.row_content.chainid,
@@ -108,7 +109,5 @@ export class ShufersalTransformerService implements Transformer {
 
         // Map to the uniform store format
         return stores.map(store => this.toUniformStore(store));
-
     }
-
 }

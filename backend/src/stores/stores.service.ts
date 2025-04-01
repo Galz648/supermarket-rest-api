@@ -64,7 +64,9 @@ export class StoresService {
     async findByChain(chainName: string) {
         return this.prisma.store.findMany({
             where: {
-                chainName,
+                chain: {
+                    name: chainName
+                }
             },
             include: {
                 chain: true,
@@ -102,7 +104,9 @@ export class StoresService {
         return this.prisma.store.findMany({
             where: {
                 city: city,
-                chainName: chainName,
+                chain: {
+                    name: chainName
+                }
             },
             include: {
                 chain: true,
