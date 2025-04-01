@@ -31,13 +31,4 @@ export class ItemsController {
   async findByBarcode(@Param('barcode') barcode: string): Promise<Item> {
     return this.itemsService.findByBarcode(barcode);
   }
-
-  @Get(':id')
-  @ApiOperation({ summary: 'Get item by ID' })
-  @ApiParam({ name: 'id', description: 'Item ID' })
-  @ApiResponse({ status: 200, description: 'Returns the item' })
-  @ApiResponse({ status: 404, description: 'Item not found' })
-  async findOne(@Param('id') id: string): Promise<Item> {
-    return this.itemsService.findOne(id);
-  }
 } 
