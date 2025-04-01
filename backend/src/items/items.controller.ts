@@ -31,4 +31,16 @@ export class ItemsController {
   async findByBarcode(@Param('barcode') barcode: string): Promise<Item> {
     return this.itemsService.findByBarcode(barcode);
   }
-} 
+  @Get('chain/:chainId/stores/:storeId/items/:itemId/price')
+  @ApiOperation({ summary: 'Get price by store ID and item ID for a specific chain' })
+  @ApiParam({ name: 'chainName', description: 'Chain name' })
+  @ApiParam({ name: 'storeId', description: 'Store ID' })
+  @ApiParam({ name: 'itemId', description: 'Item ID' })
+  @ApiResponse({ status: 200, description: 'Returns the price information' })
+  @ApiResponse({ status: 404, description: 'Price not found' })
+  async getPriceByStoreIdAndItemId(@Param('chainName') chainName: string, @Param('storeId') storeId: string, @Param('itemId') itemId: string) {
+    return this.itemsService.getPriceByStoreIdAndItemId(chainName, storeId, itemId);
+  }
+}
+
+
