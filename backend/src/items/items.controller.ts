@@ -13,23 +13,14 @@ import { Item } from '@prisma/client';
 export class ItemsController {
   constructor(private readonly itemsService: ItemsService) { }
 
-  @Get()
-  @ApiOperation({ summary: 'Get all items' })
-  @ApiResponse({ status: 200, description: 'Returns all items' })
-  async findAll(): Promise<Item[]> {
-    return this.itemsService.findAll();
-  }
-
   @Get('search')
   @ApiOperation({ summary: 'Search items by name' })
   @ApiQuery({ name: 'query', required: true, description: 'Search query' })
-  @ApiQuery({ name: 'limit', required: false, description: 'Maximum number of results to return' })
   @ApiResponse({ status: 200, description: 'Returns matching items' })
   async search(
     @Query('query') query: string,
-    @Query('limit') limit?: number,
   ): Promise<Item[]> {
-    return this.itemsService.search(query, limit);
+    return this.itemsService.search(query);
   }
 
   @Get('barcode/:barcode')
@@ -40,13 +31,16 @@ export class ItemsController {
   async findByBarcode(@Param('barcode') barcode: string): Promise<Item> {
     return this.itemsService.findByBarcode(barcode);
   }
-
-  @Get(':id')
-  @ApiOperation({ summary: 'Get item by ID' })
-  @ApiParam({ name: 'id', description: 'Item ID' })
-  @ApiResponse({ status: 200, description: 'Returns the item' })
-  @ApiResponse({ status: 404, description: 'Item not found' })
-  async findOne(@Param('id') id: string): Promise<Item> {
-    return this.itemsService.findOne(id);
+  @Get('chain/:chainId/stores/:storeId/items/:itemId/price')
+  @ApiOperation({ summary: 'Get price by store ID and item ID for a specific chain' })
+  @ApiParam({ name: 'chainName', description: 'Chain name' })
+  @ApiParam({ name: 'storeId', description: 'Store ID' })
+  @ApiParam({ name: 'itemId', description: 'Item ID' })
+  @ApiResponse({ status: 200, description: 'Returns the price information' })
+  @ApiResponse({ status: 404, description: 'Price not found' })
+  async getPriceByStoreIdAndItemId(@Param('chainName') chainName: string, @Param('storeId') storeId: string, @Param('itemId') itemId: string) {
+    return this.itemsService.getPriceByStoreIdAndItemId(chainName, storeId, itemId);
   }
-} 
+}
+
+

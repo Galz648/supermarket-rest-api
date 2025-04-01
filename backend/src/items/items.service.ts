@@ -14,15 +14,6 @@ export class ItemsService {
     });
   }
 
-  async findAll() {
-    // Simplified to just return all items without pagination
-    const items = await this.prisma.item.findMany({
-      orderBy: { name: 'asc' },
-    });
-
-    return items;
-  }
-
   async findOne(id: string) {
     const item = await this.prisma.item.findUnique({
       where: { id },
@@ -68,7 +59,7 @@ export class ItemsService {
     return item;
   }
 
-  async search(query: string, limit: number = 10) {
+  async search(query: string) {
     try {
       const where: Prisma.ItemWhereInput = {
         name: {
@@ -79,12 +70,36 @@ export class ItemsService {
 
       const items = await this.prisma.item.findMany({
         where,
-        take: limit,
         orderBy: { name: 'asc' },
       });
       return items;
     } catch (error) {
       throw new Error(`Failed to search items: ${error.message}`);
     }
+  }
+
+  // TODO: this is a temporary solution
+  async getPriceByStoreIdAndItemId(chainName: string, storeId: string, itemId: string) {
+    const item = await this.prisma.item.findFirst({
+      where: { itemCode: itemId },
+    });
+    if (!item) {
+      throw new NotFoundException(`Item with ID ${itemId} not found`);
+    }
+
+    // find the chain id from the chain name
+    const chain = await this.prisma.chain.findFirst({
+      where: { name: chainName },
+    });
+    if (!chain) {
+      throw new NotFoundException(`Chain with name ${chainName} not found`);
+    }
+
+    return this.prisma.itemPrice.findFirst({
+      where: { chainId: chain.id, storeId, itemId: item.id },
+      include: {
+        store: true,
+      },
+    });
   }
 } 
