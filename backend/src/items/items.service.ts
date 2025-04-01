@@ -14,15 +14,6 @@ export class ItemsService {
     });
   }
 
-  async findAll() {
-    // Simplified to just return all items without pagination
-    const items = await this.prisma.item.findMany({
-      orderBy: { name: 'asc' },
-    });
-
-    return items;
-  }
-
   async findOne(id: string) {
     const item = await this.prisma.item.findUnique({
       where: { id },
@@ -68,7 +59,7 @@ export class ItemsService {
     return item;
   }
 
-  async search(query: string, limit: number = 10) {
+  async search(query: string) {
     try {
       const where: Prisma.ItemWhereInput = {
         name: {
@@ -79,7 +70,6 @@ export class ItemsService {
 
       const items = await this.prisma.item.findMany({
         where,
-        take: limit,
         orderBy: { name: 'asc' },
       });
       return items;

@@ -13,23 +13,14 @@ import { Item } from '@prisma/client';
 export class ItemsController {
   constructor(private readonly itemsService: ItemsService) { }
 
-  @Get()
-  @ApiOperation({ summary: 'Get all items' })
-  @ApiResponse({ status: 200, description: 'Returns all items' })
-  async findAll(): Promise<Item[]> {
-    return this.itemsService.findAll();
-  }
-
   @Get('search')
   @ApiOperation({ summary: 'Search items by name' })
   @ApiQuery({ name: 'query', required: true, description: 'Search query' })
-  @ApiQuery({ name: 'limit', required: false, description: 'Maximum number of results to return' })
   @ApiResponse({ status: 200, description: 'Returns matching items' })
   async search(
     @Query('query') query: string,
-    @Query('limit') limit?: number,
   ): Promise<Item[]> {
-    return this.itemsService.search(query, limit);
+    return this.itemsService.search(query);
   }
 
   @Get('barcode/:barcode')
