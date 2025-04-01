@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ItemsService {
@@ -8,6 +9,8 @@ export class ItemsService {
   async findByName(name: string) {
     return this.prisma.item.findMany({
       where: { name: { contains: name, mode: 'insensitive' } },
+      take: 10,
+      orderBy: { name: 'asc' },
     });
   }
 
@@ -65,23 +68,23 @@ export class ItemsService {
     return item;
   }
 
-  async search(query: string) {
-    // Ensure query is a valid string
-    const validQuery = query?.trim() || '';
+  async search(query: string, limit: number = 10) {
+    try {
+      const where: Prisma.ItemWhereInput = {
+        name: {
+          contains: query,
+          mode: 'insensitive',
+        },
+      };
 
-    if (!validQuery) {
-      return [];
+      const items = await this.prisma.item.findMany({
+        where,
+        take: limit,
+        orderBy: { name: 'asc' },
+      });
+      return items;
+    } catch (error) {
+      throw new Error(`Failed to search items: ${error.message}`);
     }
-
-    return this.prisma.item.findMany({
-      where: {
-        OR: [
-          { name: { contains: validQuery, mode: 'insensitive' } },
-          { brand: { contains: validQuery, mode: 'insensitive' } },
-          { category: { contains: validQuery, mode: 'insensitive' } },
-        ],
-      },
-      take: 20,
-    });
   }
 } 

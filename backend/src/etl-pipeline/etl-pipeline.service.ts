@@ -39,18 +39,18 @@ export class EtlPipelineService {
             return [];
         }
     }
-    @Cron(CronExpression.EVERY_5_SECONDS)
-    async dataAccessHealthCheck() {
-        try {
-            const healthStatus = await this.dataAccess.checkServiceHealth();
-            this.logger.log(`DataAccessService health status: ${healthStatus.status}`);
-        } catch (error) {
-            this.logger.error(`Failed to check DataAccessService health: ${error.message}`);
-        }
-    }
+    // @Cron(CronExpression.EVERY_5_SECONDS)
+    // async dataAccessHealthCheck() {
+    //     try {
+    //         const healthStatus = await this.dataAccess.checkServiceHealth();
+    //         this.logger.log(`DataAccessService health status: ${healthStatus.status}`);
+    //     } catch (error) {
+    //         this.logger.error(`Failed to check DataAccessService health: ${error.message}`);
+    //     }
+    // }
 
     // Run every 30 seconds for demo/testing purposes
-    @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+    @Cron(CronExpression.EVERY_12_HOURS)
     async runEtlPipelineJob() {
         this.logger.log('========================================================');
         this.logger.log('STARTING ETL PIPELINE EXECUTION');
@@ -70,8 +70,8 @@ export class EtlPipelineService {
 
             const tasks = [
                 // run the ETL pipeline for each context
-                await this.upsertStoresPipeline(context),
-                // await this.upsertProductsPipeline(context),
+                // await this.upsertStoresPipeline(context),
+                await this.upsertProductsPipeline(context),
 
             ]
 
@@ -116,12 +116,29 @@ export class EtlPipelineService {
                                     }
                                 });
 
+
+                                const chainObject = await this.prisma.chain.findUnique({
+                                    where: {
+                                        name: chain
+                                    }
+                                });
+
+                                const storeObject = await this.prisma.store.findUnique({
+                                    where: {
+                                        chainName_storeId: {
+                                            chainName: chain,
+                                            storeId: product.storeId,
+                                        }
+                                    }
+                                });
+
                                 // Then create/upsert the price data
                                 return this.prisma.itemPrice.upsert({
                                     where: {
-                                        unique_item_store_timestamp: {
-                                            itemId: item.id,
+                                        unique_price_entry: {
+                                            chainId: chain,
                                             storeId: product.storeId,
+                                            itemId: item.id,
                                             timestamp: new Date(Date.now())
                                         }
                                     },
@@ -135,6 +152,8 @@ export class EtlPipelineService {
                                         price: product.itemPrice,
                                         currency: "ILS", // Default currency for Israel TODO: determine if this is the correct way to do this
                                         storeId: product.storeId,
+                                        storeInternalId: storeObject!.id,
+                                        chainId: chainObject!.id, // TODO: this his a hack to get the (!) chain object
                                         timestamp: new Date(Date.now())
                                     }
                                 });
@@ -151,6 +170,22 @@ export class EtlPipelineService {
             this.logger.error(`Failed to run ETL pipeline: ${error.message}`);
         }
     }
+
+    // async upsertItemDiscountsPipeline(context: ETLContext) {
+    //     // TODO: implement the ETL pipeline
+    //     try {
+    //         for (const chain of context.chains) {
+    //             const itemDiscountList = await this.dataAccess.extractItemDiscountData(chain);
+    //             const transformer = this.transformerFactory.getTransformer(chain);
+    //             const transformedItemDiscountList = transformer.transformItemDiscountData(itemDiscountList);
+    //             console.log(`chain: ${chain}`);
+    //             console.log(`transformed ${transformedItemDiscountList.length} item discounts`);
+    //         }
+    //     } catch (error) {
+    //         this.logger.error(`Failed to run ETL pipeline: ${error.message}`);
+    //     }
+    // }
+    // TODO: upsertItem
     async upsertStoresPipeline(context: ETLContext) {
         // TODO: implement the ETL pipeline
         try {
@@ -168,6 +203,7 @@ export class EtlPipelineService {
                 });
 
 
+                // TODO: determine if there is a more efficient prisma/rxjs/raw query way to do this
                 const stores$ = from(transformedStoreList);
                 // TODO: determine if this is the idiomatic rxjs way to do this
                 // Process all stores concurrently (with a limit) and wait for completion
@@ -211,3 +247,4 @@ export class EtlPipelineService {
         }
     }
 }
+

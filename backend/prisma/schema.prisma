@@ -1,54 +1,80 @@
 generator client {
-    provider      = "prisma-client-js"
-    binaryTargets = ["native", "linux-arm64-openssl-1.1.x"]
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-arm64-openssl-1.1.x"]
 }
 
 datasource db {
-    provider = "mongodb"
-    url      = env("DATABASE_URL")
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
 }
 
 model Item {
-    id       String      @id @default(auto()) @map("_id") @db.ObjectId
-    itemCode String      @unique //TODO: handle duplicate
-    name     String
-    unit     String
-    category String
-    brand    String
-    prices   ItemPrice[]
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  itemCode  String      @unique //TODO: handle duplicate
+  name      String
+  unit      String
+  category  String
+  brand     String
+  prices    ItemPrice[]
+//   Promotion Promotion[]
 }
 
 model Chain {
-    id     String  @id @default(auto()) @map("_id") @db.ObjectId
-    name   String  @unique
-    stores Store[]
+  id     String  @id @default(auto()) @map("_id") @db.ObjectId
+  name   String  @unique
+  stores Store[]
 }
 
 model Store {
-    id        String      @id @default(auto()) @map("_id") @db.ObjectId // unique Mongo ID
-    storeId   String
-    name      String
-    chain     Chain       @relation(fields: [chainName], references: [name], onDelete: Cascade)
-    chainName String
-    address   String
-    prices    ItemPrice[]
-    city      String
-    zipCode   String
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId // unique Mongo ID
+  storeId   String
+  name      String
+  chain     Chain       @relation(fields: [chainName], references: [name], onDelete: Cascade)
+  chainName String
+  address   String
+  prices    ItemPrice[]
+  city      String
+  zipCode   String
 
-    @@unique([chainName, storeId], name: "chainName_storeId")
+  @@unique([chainName, storeId], name: "chainName_storeId")
 }
+
+// model ItemPrice {
+//     id        String   @id @default(auto()) @map("_id") @db.ObjectId
+//     item      Item     @relation(fields: [itemId], references: [id])
+//     itemId    String   @db.ObjectId
+//     itemCode  String   @unique
+//     price     Float
+//     currency  String
+//     store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+//     storeId   String // TODO: determine if this should be a Many to Many relationship or a One to Many relationship (item price can only have one store, but a store can have many item prices)
+//     timestamp DateTime @default(now())
+//     chainName String
+
+//     @@unique([chainName, storeId, itemId, timestamp], name: "unique_item_store_timestamp")
+// }
 
 model ItemPrice {
-    id        String   @id @default(auto()) @map("_id") @db.ObjectId
-    item      Item     @relation(fields: [itemId], references: [id])
-    itemId    String   @db.ObjectId
-    itemCode  String   @unique
-    price     Float
-    currency  String
-    store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  itemId   String @db.ObjectId
+  item     Item   @relation(fields: [itemId], references: [id])
+  itemCode String // external ID, for redundancy/search
 
-    storeId   String   @db.ObjectId     // TODO: determine if this should be a Many to Many relationship or a One to Many relationship (item price can only have one store, but a store can have many item prices)
-    timestamp DateTime @default(now())
+  storeInternalId String @db.ObjectId
+  store Store @relation(fields: [storeInternalId], references: [id], onDelete: Cascade)
+  storeId String
 
-    @@unique([itemId, storeId, timestamp], name: "unique_item_store_timestamp")
+  chainId   String // optional: denormalized for easier querying
+  price     Float
+  currency  String
+  timestamp DateTime
+
+  @@unique([chainId, storeId, itemId, timestamp], name: "unique_price_entry")
 }
+
+// model Promotion {
+//   id       String @id @default(auto()) @map("_id") @db.ObjectId
+//   itemId   String @db.ObjectId
+//   item     Item   @relation(fields: [itemId], references: [id])
+//   itemCode String // external ID, for redundancy/search
+// }

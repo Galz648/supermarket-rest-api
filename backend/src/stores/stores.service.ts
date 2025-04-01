@@ -1,26 +1,64 @@
-import { Injectable, } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class StoresService {
     constructor(private prisma: PrismaService) { }
 
-    async findAll(city: string, chainName: string) {
+    async findAll(city?: string, chain?: string) {
+        const where: Prisma.StoreWhereInput = {};
+
+        if (city) {
+            where.city = city;
+        }
+
+        if (chain) {
+            where.chain = {
+                name: chain
+            };
+        }
+
         return this.prisma.store.findMany({
-            where: {
-                address: {
-                    contains: city,
-                    mode: 'insensitive'
-                },
-                chainName: chainName,
-            },
+            where,
             include: {
-                chain: true,
-            },
-            orderBy: {
-                name: 'asc',
-            },
+                chain: true
+            }
         });
+    }
+
+    async findOne(id: string) {
+        return this.prisma.store.findUnique({
+            where: { id },
+            include: {
+                chain: true
+            }
+        });
+    }
+
+    async getAllChains() {
+        return this.prisma.chain.findMany({
+            select: {
+                id: true,
+                name: true,
+                _count: {
+                    select: {
+                        stores: true
+                    }
+                }
+            }
+        });
+    }
+
+    async getAllCities() {
+        const stores = await this.prisma.store.findMany({
+            select: {
+                city: true
+            },
+            distinct: ['city']
+        });
+
+        return stores.map(store => store.city);
     }
 
     async findByChain(chainName: string) {
@@ -63,10 +101,7 @@ export class StoresService {
     async findByCity(city: string, chainName: string) {
         return this.prisma.store.findMany({
             where: {
-                address: {
-                    contains: city,
-                    mode: 'insensitive'
-                },
+                city: city,
                 chainName: chainName,
             },
             include: {

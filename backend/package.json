@@ -15,7 +15,8 @@
     "lint:fix": "bun run eslint . --fix",
     "prisma:generate": "bun run prisma generate",
     "prisma:studio": "bun run prisma studio",
-    "seed": "bun run prisma/seed.ts"
+    "prisma:seed": "bun run prisma/seed.ts",
+    "prisma:format": "bun run prisma format"
   },
   "keywords": [
     "supermarket",
@@ -47,6 +48,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
+    "@faker-js/faker": "^9.6.0",
     "@nestjs/cli": "^10.0.0",
     "@nestjs/schematics": "^10.0.0",
     "@nestjs/testing": "^11.0.10",
