@@ -15,7 +15,8 @@
     "lint:fix": "bun run eslint . --fix",
     "prisma:generate": "bun run prisma generate",
     "prisma:studio": "bun run prisma studio",
-    "seed": "bun run prisma/seed.ts"
+    "prisma:seed": "bun run prisma/seed.ts",
+    "prisma:format": "bun run prisma format"
   },
   "keywords": [
     "supermarket",

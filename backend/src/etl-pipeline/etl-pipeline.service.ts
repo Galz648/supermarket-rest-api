@@ -50,7 +50,7 @@ export class EtlPipelineService {
     // }
 
     // Run every 30 seconds for demo/testing purposes
-    @Cron(CronExpression.EVERY_12_HOURS)
+    @Cron(CronExpression.EVERY_5_MINUTES)
     async runEtlPipelineJob() {
         this.logger.log('========================================================');
         this.logger.log('STARTING ETL PIPELINE EXECUTION');
@@ -70,8 +70,8 @@ export class EtlPipelineService {
 
             const tasks = [
                 // run the ETL pipeline for each context
-                await this.upsertStoresPipeline(context),
-                // await this.upsertProductsPipeline(context),
+                // await this.upsertStoresPipeline(context),
+                await this.upsertProductsPipeline(context),
 
             ]
 
@@ -116,12 +116,29 @@ export class EtlPipelineService {
                                     }
                                 });
 
+
+                                const chainObject = await this.prisma.chain.findUnique({
+                                    where: {
+                                        name: chain
+                                    }
+                                });
+
+                                const storeObject = await this.prisma.store.findUnique({
+                                    where: {
+                                        chainName_storeId: {
+                                            chainName: chain,
+                                            storeId: product.storeId,
+                                        }
+                                    }
+                                });
+
                                 // Then create/upsert the price data
                                 return this.prisma.itemPrice.upsert({
                                     where: {
-                                        unique_item_store_timestamp: {
-                                            itemId: item.id,
+                                        unique_price_entry: {
+                                            chainId: chain,
                                             storeId: product.storeId,
+                                            itemId: item.id,
                                             timestamp: new Date(Date.now())
                                         }
                                     },
@@ -135,6 +152,8 @@ export class EtlPipelineService {
                                         price: product.itemPrice,
                                         currency: "ILS", // Default currency for Israel TODO: determine if this is the correct way to do this
                                         storeId: product.storeId,
+                                        storeInternalId: storeObject!.id,
+                                        chainId: chainObject!.id, // TODO: this his a hack to get the (!) chain object
                                         timestamp: new Date(Date.now())
                                     }
                                 });
@@ -228,3 +247,4 @@ export class EtlPipelineService {
         }
     }
 }
+
