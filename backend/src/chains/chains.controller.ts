@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Param,
+  Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ChainsService } from './chains.service.js';
@@ -15,16 +16,16 @@ export class ChainsController {
   @Get()
   @ApiOperation({ summary: 'Get all chains' })
   @ApiResponse({ status: 200, description: 'Return all chains.' })
-  findAll() {
-    return this.chainsService.findAll();
+  findAll(@Query('includeStores') includeStores: boolean = false) {
+    return this.chainsService.findAll(includeStores);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a chain by id' })
   @ApiResponse({ status: 200, description: 'Return the chain.' })
   @ApiResponse({ status: 404, description: 'Chain not found.' })
-  findOne(@Param('id') id: string) {
-    return this.chainsService.findOne(id);
+  findOne(@Param('id') id: string, @Query('includeStores') includeStores: boolean = false) {
+    return this.chainsService.findOne(id, includeStores);
   }
 
   @Get(':id/stores')
