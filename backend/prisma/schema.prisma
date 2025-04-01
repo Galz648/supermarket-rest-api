@@ -8,53 +8,44 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-model Item {
-    id       String      @id @default(auto()) @map("_id") @db.ObjectId
-    itemCode String      @unique //TODO: handle duplicate
-    name     String
-    unit     String
-    category String
-    brand    String
-    prices   ItemPrice[]
-    //   Promotion Promotion[]
-    // ItemPromotion ItemPromotion[]
-}
+// ==========================================
+// Uniform Models (Common across all chains)
+// ==========================================
 
 model Chain {
-    id     String  @id @default(auto()) @map("_id") @db.ObjectId
-    name   String  @unique
-    stores Store[]
+    id      String  @id @default(auto()) @map("_id") @db.ObjectId
+    chainId String  @unique
+    name    String  @unique
+    stores  Store[]
 }
 
 model Store {
-    id        String      @id @default(auto()) @map("_id") @db.ObjectId // unique Mongo ID
-    storeId   String
-    name      String
-    chain     Chain       @relation(fields: [chainName], references: [name], onDelete: Cascade)
-    chainName String
-    address   String
-    prices    ItemPrice[]
-    city      String
-    zipCode   String
-    // ItemPromotion ItemPromotion[]
+    id                     String                   @id @default(auto()) @map("_id") @db.ObjectId
+    storeId                String
+    name                   String
+    chain                  Chain                    @relation(fields: [chainId], references: [chainId], onDelete: Cascade)
+    chainId                String
+    address                String
+    prices                 ItemPrice[]
+    city                   String
+    zipCode                String
+    ItemPromotion          ItemPromotion[]
+    ShufersalItemPrice     ShufersalItemPrice[]
+    ShufersalItemPromotion ShufersalItemPromotion[]
 
-    @@unique([chainName, storeId], name: "chainName_storeId")
+    @@unique([chainId, storeId], name: "chainId_storeId")
 }
 
-// model ItemPrice {
-//     id        String   @id @default(auto()) @map("_id") @db.ObjectId
-//     item      Item     @relation(fields: [itemId], references: [id])
-//     itemId    String   @db.ObjectId
-//     itemCode  String   @unique
-//     price     Float
-//     currency  String
-//     store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
-//     storeId   String // TODO: determine if this should be a Many to Many relationship or a One to Many relationship (item price can only have one store, but a store can have many item prices)
-//     timestamp DateTime @default(now())
-//     chainName String
-
-//     @@unique([chainName, storeId, itemId, timestamp], name: "unique_item_store_timestamp")
-// }
+model Item {
+    id            String          @id @default(auto()) @map("_id") @db.ObjectId
+    itemCode      String          @unique
+    name          String
+    unit          String
+    category      String?
+    brand         String?
+    prices        ItemPrice[]
+    ItemPromotion ItemPromotion[]
+}
 
 model ItemPrice {
     id       String @id @default(auto()) @map("_id") @db.ObjectId
@@ -74,45 +65,111 @@ model ItemPrice {
     @@unique([chainId, storeId, itemId, timestamp], name: "unique_price_entry")
 }
 
-// model Promotion {
-//   id       String @id @default(auto()) @map("_id") @db.ObjectId
-//   itemId   String @db.ObjectId
-//   item     Item   @relation(fields: [itemId], references: [id])
-//   itemCode String // external ID, for redundancy/search
-// }
+model ItemPromotion {
+    id       String @id @default(auto()) @map("_id") @db.ObjectId
+    itemId   String @db.ObjectId
+    item     Item   @relation(fields: [itemId], references: [id])
+    itemCode String // external ID, for redundancy/search
 
-// model ItemPromotion {
-//     id       String @id @default(auto()) @map("_id") @db.ObjectId
-//     itemId   String @db.ObjectId
-//     item     Item   @relation(fields: [itemId], references: [id])
-//     itemCode String // external ID, for redundancy/search
+    // Store and Chain information
+    storeInternalId String @db.ObjectId
+    store           Store  @relation(fields: [storeInternalId], references: [id], onDelete: Cascade)
+    storeId         String
+    chainId         String // denormalized for easier querying
 
-//     // Store and Chain information
-//     storeInternalId String @db.ObjectId
-//     store           Store  @relation(fields: [storeInternalId], references: [id], onDelete: Cascade)
-//     storeId         String
-//     chainId         String // denormalized for easier querying
+    // Promotion details
+    promotionId           String
+    description           String
+    startDate             DateTime
+    endDate               DateTime
+    discountType          String // e.g., "percentage", "fixed", "buyXgetY"
+    discountRate          Float?
+    discountedPrice       Float?
+    minimumQuantity       Float
+    maximumQuantity       Float?
+    minimumPurchaseAmount Float?
 
-//     // Promotion details
-//     promotionId           String
-//     description           String
-//     startDate             DateTime
-//     endDate               DateTime
-//     discountType          String // e.g., "percentage", "fixed", "buyXgetY"
-//     discountRate          Float?
-//     discountedPrice       Float?
-//     minimumQuantity       Float
-//     maximumQuantity       Float?
-//     minimumPurchaseAmount Float?
+    // Promotion rules
+    allowMultipleDiscounts Boolean @default(false)
+    isWeightedPromotion    Boolean @default(false)
+    additionalRestrictions String?
 
-//     // Promotion rules
-//     allowMultipleDiscounts Boolean @default(false)
-//     isWeightedPromotion    Boolean @default(false)
-//     additionalRestrictions String?
+    // Metadata
+    lastUpdated DateTime @default(now())
+    timestamp   DateTime @default(now())
 
-//     // Metadata
-//     lastUpdated DateTime @default(now())
-//     timestamp   DateTime @default(now())
+    @@unique([chainId, storeId, itemId, promotionId], name: "unique_promotion")
+}
 
-//     @@unique([chainId, storeId, itemId, promotionId], name: "unique_promotion")
-// }
+// ==========================================
+// Chain-Specific Models
+// ==========================================
+
+// Shufersal-specific models
+model ShufersalItem {
+    id            String                   @id @default(auto()) @map("_id") @db.ObjectId
+    itemCode      String                   @unique
+    name          String
+    unit          String
+    category      String?
+    brand         String?
+    prices        ShufersalItemPrice[]
+    ItemPromotion ShufersalItemPromotion[]
+}
+
+model ShufersalItemPrice {
+    id       String        @id @default(auto()) @map("_id") @db.ObjectId
+    itemId   String        @db.ObjectId
+    item     ShufersalItem @relation(fields: [itemId], references: [id])
+    itemCode String // external ID, for redundancy/search
+
+    storeInternalId String @db.ObjectId
+    store           Store  @relation(fields: [storeInternalId], references: [id], onDelete: Cascade)
+    storeId         String
+
+    chainId   String // optional: denormalized for easier querying
+    price     Float
+    currency  String
+    timestamp DateTime
+
+    @@unique([chainId, storeId, itemId, timestamp], name: "unique_shufersal_price_entry")
+}
+
+model ShufersalItemPromotion {
+    id       String        @id @default(auto()) @map("_id") @db.ObjectId
+    itemId   String        @db.ObjectId
+    item     ShufersalItem @relation(fields: [itemId], references: [id])
+    itemCode String // external ID, for redundancy/search
+
+    // Store and Chain information
+    storeInternalId String @db.ObjectId
+    store           Store  @relation(fields: [storeInternalId], references: [id], onDelete: Cascade)
+    storeId         String
+    chainId         String // denormalized for easier querying
+
+    // Promotion details
+    promotionId           String
+    description           String
+    startDate             DateTime
+    endDate               DateTime
+    discountType          String // e.g., "percentage", "fixed", "buyXgetY"
+    discountRate          Float?
+    discountedPrice       Float?
+    minimumQuantity       Float
+    maximumQuantity       Float?
+    minimumPurchaseAmount Float?
+
+    // Promotion rules
+    allowMultipleDiscounts Boolean @default(false)
+    isWeightedPromotion    Boolean @default(false)
+    additionalRestrictions String?
+
+    // Metadata
+    lastUpdated DateTime @default(now())
+    timestamp   DateTime @default(now())
+
+    @@unique([chainId, storeId, itemId, promotionId], name: "unique_shufersal_promotion")
+}
+
+// Rami Levi-specific models can be added here
+// Yenot Bitan-specific models can be added here

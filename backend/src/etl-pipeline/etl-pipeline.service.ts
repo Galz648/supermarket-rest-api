@@ -125,8 +125,8 @@ export class EtlPipelineService {
 
                                 const storeObject = await this.prisma.store.findUnique({
                                     where: {
-                                        chainName_storeId: {
-                                            chainName: chain,
+                                        chainId_storeId: {
+                                            chainId: chain,
                                             storeId: product.storeId,
                                         }
                                     }
@@ -199,9 +199,11 @@ export class EtlPipelineService {
                 await this.prisma.chain.upsert({
                     where: { name: chain },
                     update: { name: chain },
-                    create: { name: chain }
+                    create: {
+                        name: chain,
+                        chainId: chain // Using the chain name as the chainId since it's unique
+                    }
                 });
-
 
                 // TODO: determine if there is a more efficient prisma/rxjs/raw query way to do this
                 const stores$ = from(transformedStoreList);
@@ -213,15 +215,14 @@ export class EtlPipelineService {
                             (store) =>
                                 this.prisma.store.upsert({
                                     where: {
-                                        chainName_storeId: {
-                                            chainName: chain,
+                                        chainId_storeId: {
+                                            chainId: chain,
                                             storeId: store.storeId,
                                         },
                                     },
-                                    update: { // TODO: determine if this needs a storeId field
+                                    update: {
                                         name: store.name,
                                         address: store.address,
-                                        chainName: chain,
                                         city: store.city,
                                         zipCode: store.zipCode,
                                     },
@@ -231,7 +232,7 @@ export class EtlPipelineService {
                                         address: store.address,
                                         city: store.city,
                                         zipCode: store.zipCode,
-                                        chainName: chain,
+                                        chainId: chain,
                                     },
                                 }),
                             5 // <-- concurrency limit
