@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ChainsService {
@@ -15,18 +16,31 @@ export class ChainsService {
     }
     return this.prisma.chain.findMany();
   }
+
   async findOne(id: string, includeStores: boolean = false) {
-    const chain = await this.prisma.chain.findUnique({
-      where: { id },
-      include: {
-        stores: includeStores,
-      },
-    });
+    try {
+      const chain = await this.prisma.chain.findUnique({
+        where: { id },
+        include: includeStores ? { stores: true } : undefined,
+      });
 
-    if (!chain) {
-      throw new NotFoundException(`Chain with ID ${id} not found`);
+      if (!chain) {
+        throw new NotFoundException(`Chain with ID ${id} not found`);
+      }
+
+      return chain;
+    } catch (error) {
+      this.handlePrismaError(error, id);
     }
+  }
 
-    return chain;
+  private handlePrismaError(error: unknown, id: string): never {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2023') {
+        throw new BadRequestException(`Invalid ID format: ${id}`);
+      }
+    }
+    // Re-throw other errors
+    throw error;
   }
 } 
