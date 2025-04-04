@@ -3,19 +3,16 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { DataAccessService, SupermarketChain } from './data-access.service.js';
 import { TransformerFactory } from './transformers/transformer-factory.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { Chain, Store, Item } from '@prisma/client';
 import { from, mergeMap, toArray } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
 import { getSupportedChains } from './data-access.service.js';
-interface ETLContext {
-    chains: SupermarketChain[]
-}
+import { UniformItem, UniformStore } from './schemas/uniform/index.js';
 
-
-
-// Enum of all chains that can be processed by the ETL pipeline
 @Injectable()
 export class EtlPipelineService {
     private readonly logger = new Logger(EtlPipelineService.name);
+    private readonly CONCURRENCY_LIMIT = 5;
 
     constructor(
         private readonly dataAccess: DataAccessService,
@@ -23,11 +20,12 @@ export class EtlPipelineService {
         private readonly prisma: PrismaService,
     ) { }
 
-
     async determineChainsToProcess(): Promise<SupermarketChain[]> {
         try {
             const availableChains = await this.dataAccess.listAvailableChains();
+            this.logger.log(`Available chains: ${availableChains}`);
             const supportedChains = getSupportedChains();
+            this.logger.log(`Supported chains: ${supportedChains}`);
 
             // Filter and cast valid chains to SupermarketChain enum
             // TODO: determine this is the correct way to do this
@@ -39,15 +37,6 @@ export class EtlPipelineService {
             return [];
         }
     }
-    // @Cron(CronExpression.EVERY_5_SECONDS)
-    // async dataAccessHealthCheck() {
-    //     try {
-    //         const healthStatus = await this.dataAccess.checkServiceHealth();
-    //         this.logger.log(`DataAccessService health status: ${healthStatus.status}`);
-    //     } catch (error) {
-    //         this.logger.error(`Failed to check DataAccessService health: ${error.message}`);
-    //     }
-    // }
 
     // Run every 30 seconds for demo/testing purposes
     @Cron(CronExpression.EVERY_12_HOURS)
@@ -57,195 +46,186 @@ export class EtlPipelineService {
         this.logger.log('========================================================');
 
         try {
-
             const chainsToProcess = await this.determineChainsToProcess();
             this.logger.log(`Found ${chainsToProcess.length} supported chains to process`);
-            // create a new ETLContext for each chain
 
-            const context: ETLContext = {
-                chains: chainsToProcess
-            };
+            // if no chains to process, return
+            if (chainsToProcess.length === 0) {
+                this.logger.error('No chains to process: no supported chains found');
+                throw new Error('No chains to process: no supported chains found - something is wrong');
+            }
 
-            // write a task runner with rxjs
+            for (const chain of chainsToProcess) {
+                // Process stores
+                const storeList = await this.dataAccess.extractStoreData(chain);
+                const storeTransformer = this.transformerFactory.getTransformer(chain);
+                const transformedStoreList = storeTransformer.transformStoreData(storeList);
+                this.logger.log(`Processing ${transformedStoreList.length} stores for chain ${chain}`);
+                await this.upsertStoresPipeline(chain, transformedStoreList);
 
-            const tasks = [
-                // run the ETL pipeline for each context
-                // await this.upsertStoresPipeline(context),
-                await this.upsertProductsPipeline(context),
-
-            ]
-
-            tasks.forEach(async (task) => {
-                await task;
-            });
+                // Process products
+                const productList = await this.dataAccess.extractProductData(chain);
+                const productTransformer = this.transformerFactory.getTransformer(chain);
+                const transformedProductList = productTransformer.transformProductData(productList);
+                this.logger.log(`Processing ${transformedProductList.length} products for chain ${chain}`);
+                await this.upsertProductsPipeline(chain, transformedProductList);
+            }
 
         } catch (error) {
             this.logger.error(`ETL PIPELINE FAILED: ${error.message}`);
+            throw error;
         }
     }
 
-
-    async upsertProductsPipeline(context: ETLContext) {
-        // TODO: implement the ETL pipeline
+    async upsertStoresPipeline(chain: string, stores: UniformStore[]): Promise<void> {
         try {
-            for (const chain of context.chains) {
-                const productList = await this.dataAccess.extractProductData(chain);
-                const transformer = this.transformerFactory.getTransformer(chain);
-                const transformedProductList = transformer.transformProductData(productList);
-                console.log(`chain: ${chain}`);
-                console.log(`transformed ${transformedProductList.length} products`);
-                return await firstValueFrom(
-                    from(transformedProductList).pipe(
-                        mergeMap(
-                            async (product) => {
-                                // First upsert the item
-                                const item = await this.prisma.item.upsert({
-                                    where: { itemCode: product.itemCode },
-                                    update: {
-                                        name: product.itemName,
-                                        unit: product.itemUnitOfMeasure,
-                                        category: product.itemStatus,
-                                        brand: product.manufacturerName
-                                    },
-                                    create: {
-                                        itemCode: product.itemCode,
-                                        name: product.itemName,
-                                        unit: product.itemUnitOfMeasure,
-                                        category: product.itemStatus,
-                                        brand: product.manufacturerName
-                                    }
-                                });
+            const chainObject = await this.upsertChain(chain);
+            await this.processStoresBatch(chainObject, stores);
+        } catch (error) {
+            this.logger.error(`Error in upsertStoresPipeline for chain ${chain}:`, error);
+            throw error;
+        }
+    }
 
+    async upsertProductsPipeline(chain: string, products: UniformItem[]): Promise<void> {
+        try {
+            const chainObject = await this.upsertChain(chain);
+            await this.processProductsBatch(chainObject, products);
+        } catch (error) {
+            this.logger.error(`Error in upsertProductsPipeline for chain ${chain}:`, error);
+            throw error;
+        }
+    }
 
-                                const chainObject = await this.prisma.chain.findUnique({
-                                    where: {
-                                        name: chain
-                                    }
-                                });
+    private async upsertChain(chain: string): Promise<Chain> {
+        return this.prisma.chain.upsert({
+            where: { name: chain },
+            update: {},
+            create: {
+                name: chain,
+                chainId: chain
+            }
+        });
+    }
 
-                                const storeObject = await this.prisma.store.findUnique({
-                                    where: {
-                                        chainId_storeId: {
-                                            chainId: chain,
-                                            storeId: product.storeId,
-                                        }
-                                    }
-                                });
+    private async upsertStore(chainObject: Chain, store: UniformStore) {
+        return this.prisma.store.upsert({
+            where: {
+                chainId_storeId: {
+                    chainId: chainObject.name,
+                    storeId: store.storeId
+                }
+            },
+            update: {
+                name: store.name,
+                address: store.address,
+                city: store.city,
+                zipCode: store.zipCode
+            },
+            create: {
+                storeId: store.storeId,
+                name: store.name,
+                address: store.address,
+                city: store.city,
+                zipCode: store.zipCode,
+                chainId: chainObject.name,
+                chainObjectId: chainObject.id
+            }
+        });
+    }
 
-                                // Then create/upsert the price data
-                                return this.prisma.itemPrice.upsert({
-                                    where: {
-                                        unique_price_entry: {
-                                            chainId: chain,
-                                            storeId: product.storeId,
-                                            itemId: item.id,
-                                            timestamp: new Date(Date.now())
-                                        }
-                                    },
-                                    update: {
-                                        price: product.itemPrice,
-                                        currency: "ILS", // Default currency for Israel TODO: determine if this is the correct way to do this
-                                    },
-                                    create: {
-                                        itemId: item.id,
-                                        itemCode: product.itemCode,
-                                        price: product.itemPrice,
-                                        currency: "ILS", // Default currency for Israel TODO: determine if this is the correct way to do this
+    private async upsertItem(product: UniformItem): Promise<Item> {
+        return this.prisma.item.upsert({
+            where: { itemCode: product.itemCode },
+            update: {
+                name: product.itemName,
+                unit: product.itemUnitOfMeasure,
+                category: product.itemStatus,
+                brand: product.manufacturerName
+            },
+            create: {
+                itemCode: product.itemCode,
+                name: product.itemName,
+                unit: product.itemUnitOfMeasure,
+                category: product.itemStatus,
+                brand: product.manufacturerName
+            }
+        });
+    }
+
+    private async upsertPrice(item: Item, chainObject: Chain, storeObject: Store, product: UniformItem) {
+        return this.prisma.itemPrice.upsert({
+            where: {
+                unique_price_entry: {
+                    chainId: chainObject.name,
+                    storeId: product.storeId,
+                    itemId: item.id,
+                    timestamp: new Date(Date.now())
+                }
+            },
+            update: {
+                price: product.itemPrice,
+                currency: "ILS",
+            },
+            create: {
+                itemId: item.id,
+                itemCode: product.itemCode,
+                price: product.itemPrice,
+                currency: "ILS",
+                storeId: product.storeId,
+                storeObjectId: storeObject.id,
+                chainObjectId: chainObject.id,
+                chainId: chainObject.name,
+                timestamp: new Date(Date.now())
+            }
+        });
+    }
+
+    private async processStoresBatch(chainObject: Chain, stores: UniformStore[]) {
+        return firstValueFrom(
+            from(stores).pipe(
+                mergeMap(
+                    async (store) => this.upsertStore(chainObject, store),
+                    this.CONCURRENCY_LIMIT
+                ),
+                toArray()
+            )
+        );
+    }
+
+    private async processProductsBatch(chainObject: Chain, products: UniformItem[]) {
+        return firstValueFrom(
+            from(products).pipe(
+                mergeMap(
+                    async (product) => {
+                        try {
+                            const item = await this.upsertItem(product);
+
+                            const storeObject = await this.prisma.store.findUnique({
+                                where: {
+                                    chainId_storeId: {
+                                        chainId: chainObject.name,
                                         storeId: product.storeId,
-                                        storeInternalId: storeObject!.id,
-                                        chainId: chainObject!.id, // TODO: this his a hack to get the (!) chain object
-                                        timestamp: new Date(Date.now())
                                     }
-                                });
-                            },
-                            5 // <-- concurrency limit
-                        ),
-                        toArray() // collect all results before completing
-                    )
-                );
+                                }
+                            });
 
+                            if (!storeObject) {
+                                throw new Error(`Store ${product.storeId} not found in chain ${chainObject.name}`);
+                            }
 
-            }
-        } catch (error) {
-            this.logger.error(`Failed to run ETL pipeline: ${error.message}`);
-        }
-    }
-
-    // async upsertItemDiscountsPipeline(context: ETLContext) {
-    //     // TODO: implement the ETL pipeline
-    //     try {
-    //         for (const chain of context.chains) {
-    //             const itemDiscountList = await this.dataAccess.extractItemDiscountData(chain);
-    //             const transformer = this.transformerFactory.getTransformer(chain);
-    //             const transformedItemDiscountList = transformer.transformItemDiscountData(itemDiscountList);
-    //             console.log(`chain: ${chain}`);
-    //             console.log(`transformed ${transformedItemDiscountList.length} item discounts`);
-    //         }
-    //     } catch (error) {
-    //         this.logger.error(`Failed to run ETL pipeline: ${error.message}`);
-    //     }
-    // }
-    // TODO: upsertItem
-    async upsertStoresPipeline(context: ETLContext) {
-        // TODO: implement the ETL pipeline
-        try {
-            for (const chain of context.chains) {
-                const storeList = await this.dataAccess.extractStoreData(chain);
-                const transformer = this.transformerFactory.getTransformer(chain);
-                const transformedStoreList = transformer.transformStoreData(storeList);
-                console.log(`chain: ${chain}`);
-                console.log(`transformed ${transformedStoreList.length} stores`);
-
-                await this.prisma.chain.upsert({
-                    where: { name: chain },
-                    update: { name: chain },
-                    create: {
-                        name: chain,
-                        chainId: chain // Using the chain name as the chainId since it's unique
-                    }
-                });
-
-                // TODO: determine if there is a more efficient prisma/rxjs/raw query way to do this
-                const stores$ = from(transformedStoreList);
-                // TODO: determine if this is the idiomatic rxjs way to do this
-                // Process all stores concurrently (with a limit) and wait for completion
-                const processedStores = await firstValueFrom(
-                    stores$.pipe(
-                        mergeMap(
-                            (store) =>
-                                this.prisma.store.upsert({
-                                    where: {
-                                        chainId_storeId: {
-                                            chainId: chain,
-                                            storeId: store.storeId,
-                                        },
-                                    },
-                                    update: {
-                                        name: store.name,
-                                        address: store.address,
-                                        city: store.city,
-                                        zipCode: store.zipCode,
-                                    },
-                                    create: {
-                                        storeId: store.storeId,
-                                        name: store.name,
-                                        address: store.address,
-                                        city: store.city,
-                                        zipCode: store.zipCode,
-                                        chainId: chain,
-                                    },
-                                }),
-                            5 // <-- concurrency limit
-                        ),
-                        toArray() // collect all results before completing
-                    )
-                );
-
-                this.logger.log(`Successfully upserted ${processedStores.length} stores for chain ${chain}`);
-            }
-        } catch (error) {
-            this.logger.error(`Failed to run ETL pipeline: ${error.message}`);
-        }
+                            // Price is critical as it depends on all above
+                            await this.upsertPrice(item, chainObject, storeObject, product);
+                        } catch (error) {
+                            this.logger.error(`Failed to process product ${product.itemCode}: ${error.message}`);
+                            throw error; // Stop processing this product batch
+                        }
+                    },
+                    this.CONCURRENCY_LIMIT
+                ),
+                toArray()
+            )
+        );
     }
 }
 
