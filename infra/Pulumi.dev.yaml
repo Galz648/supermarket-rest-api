@@ -1,0 +1,3 @@
+config:
+  supermarket-rest-api:authToken:
+    secure: AAABAJgZByJ3me0V3FYVSm1JPSsoEaCFwYp2xJwqLSxqI6pk8JV0P6xgpG+V/sYDSOB6epMSJPh+uyD8Lpkjgh9Gkqk=
