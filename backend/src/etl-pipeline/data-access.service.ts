@@ -35,14 +35,23 @@ export interface ServiceHealth {
 export enum SupermarketChain {
     SHUFERSAL = 'SHUFERSAL',
     HAZI_HINAM = 'HAZI_HINAM',
+    RAMI_LEVY = 'RAMI_LEVY',
     // Add more chains here as needed
-    // RAMI_LEVY = 'RAMI_LEVY',
-    // VICTORY = 'VICTORY',
-    // YOCHANANOF = 'YOCHANANOF',
+    VICTORY = 'VICTORY',
+    YOCHANANOF = 'YOCHANANOF',
 }
 
+
+const supportedChainsMapping: Map<SupermarketChain, boolean> = new Map([
+    [SupermarketChain.SHUFERSAL, false],
+    [SupermarketChain.HAZI_HINAM, false],
+    [SupermarketChain.RAMI_LEVY, true],
+    [SupermarketChain.VICTORY, false],
+    [SupermarketChain.YOCHANANOF, false],
+]);
 export function getSupportedChains(): SupermarketChain[] {
-    return Object.values(SupermarketChain);
+    // get all keys from the map that have a value of true
+    return Array.from(supportedChainsMapping.keys()).filter(chain => supportedChainsMapping.get(chain));
 }
 /**
  * Available file types for extraction
@@ -82,6 +91,7 @@ export class DataAccessService {
             },
         });
     }
+    // TODO: consider removing this method - not used anywhere
     /**
      * Check the health of the supermarket data service
      */

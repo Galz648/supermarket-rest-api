@@ -12,7 +12,7 @@ import { UniformItem, UniformStore } from './schemas/uniform/index.js';
 @Injectable()
 export class EtlPipelineService {
     private readonly logger = new Logger(EtlPipelineService.name);
-    private readonly CONCURRENCY_LIMIT = 5;
+    private readonly CONCURRENCY_LIMIT = 1;
 
     constructor(
         private readonly dataAccess: DataAccessService,
