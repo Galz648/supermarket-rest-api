@@ -6,6 +6,12 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ChainsService } from './chains.service.js';
+import { Chain, Store } from '@prisma/client';
+
+// Define the ChainWithStores type that includes the stores relation
+type ChainWithStores = Chain & {
+  stores: Store[];
+};
 
 @ApiTags('chains')
 @Controller('chains')
@@ -33,9 +39,8 @@ export class ChainsController {
   @ApiResponse({ status: 200, description: 'Return stores for the chain.' })
   @ApiResponse({ status: 404, description: 'Chain not found.' })
   async findStores(@Param('id') id: string) {
-    const chain = await this.chainsService.findOne(id);
+    // TODO: consider changing the implementation to use the findOne method to avoid the type cast
+    const chain = await this.chainsService.findOne(id, true) as ChainWithStores;
     return chain.stores;
   }
-
-
 } 
