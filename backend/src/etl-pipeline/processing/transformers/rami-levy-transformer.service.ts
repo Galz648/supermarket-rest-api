@@ -1,9 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { RawFileContent } from '../data-access.service.js';
-import { RamiLevyProduct, RamiLevyStore, RamiLevyProductSchema, RamiLevyStoreSchema } from '../schemas/chains/rami-levy/index.js';
+import { RawFileContent } from '../../data-access.service.js';
+import { RamiLevyProduct, RamiLevyStore, RamiLevyProductSchema, RamiLevyStoreSchema } from '../../schemas/chains/rami-levy/index.js';
 import { Transformer } from './transformer.js';
-import { UniformItem } from '../schemas/uniform/index.js';
-import { UniformStore } from '../schemas/uniform/index.js';
+import { UniformItem, UniformStore } from '../../schemas/uniform/index.js';
 
 /**
  * Service that transforms raw Rami Levy data into structured formats.

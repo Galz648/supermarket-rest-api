@@ -1,13 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import { DataAccessService, SupermarketChain } from './data-access.service.js';
-import { TransformerFactory } from './transformers/transformer-factory.js';
-import { PrismaService } from '../prisma/prisma.service.js';
-import { Chain, Store, Item } from '@prisma/client';
-import { from, mergeMap, toArray } from 'rxjs';
-import { firstValueFrom } from 'rxjs';
-import { getSupportedChains } from './data-access.service.js';
+import { firstValueFrom, from, mergeMap, toArray } from 'rxjs';
+import { DataAccessService, getSupportedChains, SupermarketChain } from './data-access.service.js';
 import { UniformItem, UniformStore } from './schemas/uniform/index.js';
+import { ChainRegistryService } from './processing/registry/chain-registry.service.js';
+import { Cron } from '@nestjs/schedule';
+import { CronExpression } from '@nestjs/schedule';
+import { PrismaService } from '../prisma/prisma.service.js';
+import { Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { Chain, Store, Item } from '@prisma/client';
 
 @Injectable()
 export class EtlPipelineService {
@@ -16,7 +16,7 @@ export class EtlPipelineService {
 
     constructor(
         private readonly dataAccess: DataAccessService,
-        private readonly transformerFactory: TransformerFactory,
+        private readonly chainRegistry: ChainRegistryService,
         private readonly prisma: PrismaService,
     ) { }
 
@@ -56,19 +56,28 @@ export class EtlPipelineService {
             }
 
             for (const chain of chainsToProcess) {
-                // Process stores
-                const storeList = await this.dataAccess.extractStoreData(chain);
-                const storeTransformer = this.transformerFactory.getTransformer(chain);
-                const transformedStoreList = storeTransformer.transformStoreData(storeList);
-                this.logger.log(`Processing ${transformedStoreList.length} stores for chain ${chain}`);
-                await this.upsertStoresPipeline(chain, transformedStoreList);
+                // Get transformer from the registry
+                const transformer = this.chainRegistry.getTransformer(chain);
+                this.logger.log(`Transformer for chain ${chain}: ${transformer}`);
 
-                // Process products
-                const productList = await this.dataAccess.extractProductData(chain);
-                const productTransformer = this.transformerFactory.getTransformer(chain);
-                const transformedProductList = productTransformer.transformProductData(productList);
-                this.logger.log(`Processing ${transformedProductList.length} products for chain ${chain}`);
-                await this.upsertProductsPipeline(chain, transformedProductList);
+                // // Process stores
+                // const storeList = await this.dataAccess.extractStoreData(chain);
+
+                // if (this.chainRegistry.hasStoreNormalizer(chain)) {
+                //     // Process using normalizer if available
+                //     const normalizer = this.chainRegistry.getStoreNormalizer(chain);
+                //     if (normalizer) {
+                //         const normalizedStoreList = normalizer.normalizeStoreData(storeList);
+                //         this.logger.log(`Processing ${normalizedStoreList.length} normalized stores for chain ${chain}`);
+                //         await this.upsertStoresPipeline(chain, normalizedStoreList);
+                //     }
+                // }
+
+                // // Process products
+                // const productList = await this.dataAccess.extractProductData(chain);
+                // const transformedProductList = transformer.transformProductData(productList);
+                // this.logger.log(`Processing ${transformedProductList.length} products for chain ${chain}`);
+                // await this.upsertProductsPipeline(chain, transformedProductList);
             }
 
         } catch (error) {
@@ -185,7 +194,7 @@ export class EtlPipelineService {
         return firstValueFrom(
             from(stores).pipe(
                 mergeMap(
-                    async (store) => this.upsertStore(chainObject, store),
+                    async (store: UniformStore) => this.upsertStore(chainObject, store), // TODO: check if this is correct
                     this.CONCURRENCY_LIMIT
                 ),
                 toArray()
@@ -197,7 +206,7 @@ export class EtlPipelineService {
         return firstValueFrom(
             from(products).pipe(
                 mergeMap(
-                    async (product) => {
+                    async (product: UniformItem) => {
                         try {
                             const item = await this.upsertItem(product);
 

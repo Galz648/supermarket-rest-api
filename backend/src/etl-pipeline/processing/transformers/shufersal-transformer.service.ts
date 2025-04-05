@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { RawFileContent } from '../data-access.service.js';
-import { ShufersalProduct, ShufersalStore, ShufersalProductSchema, ShufersalStoreSchema } from '../schemas/chains/shufersal/index.js';
+import { RawFileContent } from '../../data-access.service.js';
+import { ShufersalProduct, ShufersalStore, ShufersalProductSchema, ShufersalStoreSchema } from '../../schemas/chains/shufersal/index.js';
 import { Transformer } from './transformer.js';
-import { UniformItem } from '../schemas/uniform/index.js';
-import { UniformStore } from '../schemas/uniform/index.js';
+import { UniformItem } from '../../schemas/uniform/index.js';
+import { UniformStore } from '../../schemas/uniform/index.js';
 
 /**
  * Service that transforms raw Shufersal data into structured formats.
