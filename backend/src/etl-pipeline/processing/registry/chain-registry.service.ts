@@ -3,6 +3,7 @@ import { SupermarketChain } from '../../data-access.service.js';
 import { Transformer } from '../transformers/transformer.js';
 import { ShufersalTransformerService } from '../transformers/shufersal-transformer.service.js';
 import { HaziHinamTransformerService } from '../transformers/hazi-hinam-transformer.service.js';
+import { TivTaamTransformerService } from '../transformers/tiv-taam-transformer.service.js';
 import { UniformItem, UniformStore } from '../../schemas/uniform/index.js';
 
 /**
@@ -29,10 +30,12 @@ export class ChainRegistryService {
     constructor(
         private readonly shufersalTransformer: ShufersalTransformerService,
         private readonly haziHinamTransformer: HaziHinamTransformerService,
+        private readonly tivTaamTransformer: TivTaamTransformerService,
     ) {
         this.initializeRegistry([
             { chain: SupermarketChain.SHUFERSAL, processors: { transformer: this.shufersalTransformer } },
             { chain: SupermarketChain.HAZI_HINAM, processors: { transformer: this.haziHinamTransformer } },
+            { chain: SupermarketChain.TIV_TAAM, processors: { transformer: this.tivTaamTransformer } },
         ]);
     }
 

@@ -36,9 +36,9 @@ export enum SupermarketChain {
     SHUFERSAL = 'SHUFERSAL',
     HAZI_HINAM = 'HAZI_HINAM',
     RAMI_LEVY = 'RAMI_LEVY',
-    // Add more chains here as needed
     VICTORY = 'VICTORY',
     YOCHANANOF = 'YOCHANANOF',
+    TIV_TAAM = 'TIV_TAAM',
 }
 
 
@@ -48,6 +48,7 @@ const supportedChainsMapping: Map<SupermarketChain, boolean> = new Map([
     [SupermarketChain.RAMI_LEVY, false],
     [SupermarketChain.VICTORY, false],
     [SupermarketChain.YOCHANANOF, false],
+    [SupermarketChain.TIV_TAAM, true],
 ]);
 export function getSupportedChains(): SupermarketChain[] {
     // get all keys from the map that have a value of true
