@@ -1,9 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Transformer } from './transformer.js';
-import { RawFileContent } from '../data-access.service.js';
-import { UniformItem } from '../schemas/uniform/index.js';
-import { HaziHinamProduct, HaziHinamStore, HaziHinamProductSchema, HaziHinamStoreSchema } from '../schemas/chains/hazi-hinam/index.js';
-import { UniformStore } from '../schemas/uniform/index.js';
+import { RawFileContent } from '../../data-access.service.js';
+import { UniformItem, UniformStore } from '../../schemas/uniform/index.js';
+import { HaziHinamProduct, HaziHinamStore, HaziHinamProductSchema, HaziHinamStoreSchema } from '../../schemas/chains/hazi-hinam/index.js';
 
 /**
  * Service that transforms raw Hazi-Hinam data into structured formats.

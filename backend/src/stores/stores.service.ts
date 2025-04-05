@@ -1,22 +1,24 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Prisma } from '@prisma/client';
+import { ObjectId } from 'mongodb';
 
 @Injectable()
 export class StoresService {
     constructor(private prisma: PrismaService) { }
 
-    async findAll(city?: string, chain?: string) {
+    async findAll(city?: string, chainObjectId?: string) {
         const where: Prisma.StoreWhereInput = {};
 
         if (city) {
             where.city = city;
         }
 
-        if (chain) {
-            where.chain = {
-                name: chain
-            };
+        if (chainObjectId) {
+            if (!ObjectId.isValid(chainObjectId)) {
+                throw new BadRequestException(`Invalid chain ObjectId: ${chainObjectId}`);
+            }
+            where.chainObjectId = chainObjectId;
         }
 
         return this.prisma.store.findMany({
@@ -28,6 +30,10 @@ export class StoresService {
     }
 
     async findOne(id: string) {
+        if (!ObjectId.isValid(id)) {
+            throw new BadRequestException(`Invalid store ObjectId: ${id}`);
+        }
+
         return this.prisma.store.findUnique({
             where: { id },
             include: {
@@ -51,29 +57,26 @@ export class StoresService {
     }
 
     async getAllCities() {
-        const stores = await this.prisma.store.findMany({
+        return this.prisma.store.findMany({
             select: {
                 city: true
             },
             distinct: ['city']
         });
-
-        return stores.map(store => store.city);
     }
 
-    async findByChain(chainName: string) {
+    async findByChain(chainObjectId: string) {
+        if (!ObjectId.isValid(chainObjectId)) {
+            throw new BadRequestException(`Invalid chain ObjectId: ${chainObjectId}`);
+        }
+
         return this.prisma.store.findMany({
             where: {
-                chain: {
-                    name: chainName
-                }
+                chainObjectId
             },
             include: {
-                chain: true,
-            },
-            orderBy: {
-                name: 'asc',
-            },
+                chain: true
+            }
         });
     }
 
@@ -100,20 +103,19 @@ export class StoresService {
     //     });
     // }
 
-    async findByCity(city: string, chainName: string) {
+    async findByCity(city: string, chainObjectId: string) {
+        if (!ObjectId.isValid(chainObjectId)) {
+            throw new BadRequestException(`Invalid chain ObjectId: ${chainObjectId}`);
+        }
+
         return this.prisma.store.findMany({
             where: {
-                city: city,
-                chain: {
-                    name: chainName
-                }
+                city,
+                chainObjectId
             },
             include: {
-                chain: true,
-            },
-            orderBy: {
-                name: 'asc',
-            },
+                chain: true
+            }
         });
     }
 }

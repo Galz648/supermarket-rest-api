@@ -30,7 +30,6 @@ export const ShufersalProductSchema = z.object({
 });
 
 export type ShufersalProduct = z.infer<typeof ShufersalProductSchema>;
-
 // Store schema
 export const ShufersalStoreSchema = z.object({
     row_content: z.object({
@@ -48,4 +47,5 @@ export const ShufersalStoreSchema = z.object({
     }),
 });
 
-export type ShufersalStore = z.infer<typeof ShufersalStoreSchema>; 
+export type ShufersalStore = z.infer<typeof ShufersalStoreSchema>;
+

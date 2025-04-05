@@ -3,10 +3,12 @@ import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EtlPipelineService } from './etl-pipeline.service.js';
 import { DataAccessService } from './data-access.service.js';
-import { TransformerFactory } from './transformers/transformer-factory.js';
-import { ShufersalTransformerService } from './transformers/shufersal-transformer.service.js';
-import { HaziHinamTransformerService } from './transformers/hazi-hinam-transformer.service.js';
+import { ShufersalTransformerService } from './processing/transformers/shufersal-transformer.service.js';
+import { HaziHinamTransformerService } from './processing/transformers/hazi-hinam-transformer.service.js';
+import { TivTaamTransformerService } from './processing/transformers/tiv-taam-transformer.service.js';
 import { PrismaModule } from '../prisma/prisma.module.js';
+import { EtlPipelineController } from './etl-pipeline.controller.js';
+import { ChainRegistryService } from './processing/registry/chain-registry.service.js';
 
 @Module({
     imports: [
@@ -14,17 +16,27 @@ import { PrismaModule } from '../prisma/prisma.module.js';
         ScheduleModule.forRoot(),
         PrismaModule,
     ],
+    controllers: [EtlPipelineController],
     providers: [
+        // Core services
         EtlPipelineService,
         DataAccessService,
-        TransformerFactory,
+
+        // Transformers
         ShufersalTransformerService,
         HaziHinamTransformerService,
+        TivTaamTransformerService,
+
+        // Registry
+        ChainRegistryService,
     ],
     exports: [
+        // Core services
         EtlPipelineService,
         DataAccessService,
-        TransformerFactory,
+
+        // Registry
+        ChainRegistryService,
     ],
 })
 export class EtlPipelineModule { } 
