@@ -4,7 +4,6 @@ import { Transformer } from '../transformers/transformer.js';
 import { ShufersalTransformerService } from '../transformers/shufersal-transformer.service.js';
 import { HaziHinamTransformerService } from '../transformers/hazi-hinam-transformer.service.js';
 import { TivTaamTransformerService } from '../transformers/tiv-taam-transformer.service.js';
-import { UniformItem, UniformStore } from '../../schemas/uniform/index.js';
 
 /**
  * Registry structure for a supermarket chain

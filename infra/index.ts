@@ -110,24 +110,94 @@ const blackboxExporter = new kubernetes.helm.v3.Release("blackbox-exporter", {
         },
     },
 }, { provider });
-
 const apiDeployment = new kubernetes.apps.v1.Deployment("api-dep", {
+    metadata: {
+        name: "api-dep",
+        namespace: monitoringNamespace.metadata.name // Add the deployment to the right namespace
+    },
     spec: {
-        selector: { matchLabels: apiLabels },
         replicas: 1,
+        selector: { matchLabels: apiLabels },
         template: {
             metadata: { labels: apiLabels },
             spec: {
-                containers: [{
-                    imagePullPolicy: "IfNotPresent",
-                    name: apiLabels.name,
-                    image: api_image_tag,
-                    ports: [{ containerPort: parseInt(apiLabels.internal_port) }],
-                }],
-            },
-        },
-    },
+                containers: [
+                    {
+                        name: apiLabels.name,
+                        image: api_image_tag,
+                        imagePullPolicy: "IfNotPresent",
+                        ports: [{ containerPort: parseInt(apiLabels.internal_port) }],
+                        volumeMounts: [{
+                            name: "shared-logs",
+                            mountPath: "/app/logs"
+                        }],
+                        env: [
+                            { name: "LOG_PATH", value: "/app/logs/output.log" } // optional: your app should log to this
+                        ]
+                    },
+                    {
+                        name: "fluent-bit",
+                        image: "fluent/fluent-bit:latest",
+                        volumeMounts: [{
+                            name: "shared-logs",
+                            mountPath: "/app/logs"
+                        },
+                        {
+                            name: "config",
+                            mountPath: "/fluent-bit/etc"
+                        }],
+                        args: ["-c", "/fluent-bit/etc/fluent-bit.conf"]
+                    }
+                ],
+                volumes: [
+                    {
+                        name: "shared-logs",
+                        emptyDir: {}
+                    },
+                    {
+                        name: "config",
+                        configMap: {
+                            name: "fluent-bit-config"
+                        }
+                    }
+                ]
+            }
+        }
+    }
 }, { provider });
+
+import * as k8s from "@pulumi/kubernetes";
+
+const fluentBitConfig = new k8s.core.v1.ConfigMap("fluent-bit-config", {
+    metadata: { name: "fluent-bit-config", namespace: monitoringNamespace.metadata.name }, // or your namespace
+    data: {
+        "fluent-bit.conf": `
+[SERVICE]
+    Flush        1
+    Daemon       off
+    Log_Level    info
+    Parsers_File parsers.conf
+
+[INPUT]
+    Name    tail
+    Path    /app/logs/*.log
+    Parser  docker
+    Tag     app.logs
+
+[OUTPUT]
+    Name   stdout
+    Match  *
+`,
+        "parsers.conf": `
+[PARSER]
+    Name        docker
+    Format      json
+    Time_Key    time
+    Time_Format %Y-%m-%dT%H:%M:%S.%L
+    Time_Keep   On
+`
+    }
+});
 
 // const apiService = new kubernetes.core.v1.Service("api-svc", {
 //     spec: {
@@ -205,5 +275,46 @@ const blackboxServiceMonitor = new kubernetes.apiextensions.CustomResource("blac
     },
 }, { provider });
 
+// // Install Loki for log aggregation
+// const loki = new kubernetes.helm.v3.Release("loki", {
+//     chart: "loki",
+//     namespace: monitoringNamespace.metadata.name,
+//     version: "3.4.0",
+//     repositoryOpts: {
+//         repo: "https://grafana.github.io/helm-charts",
+//     },
+//     // values: {
+//     //     persistence: {
+//     //         enabled: true,
+//     //         size: "1Gi",
+//     //     },
+//     // },
+// }, { provider });
+
+// Install Fluent Bit for log collection
+
+// const fluentBitConfig = `
+// [SERVICE]
+//     Flush        1
+//     Log_Level    info
+//     Daemon       off
+//     Parsers_File parsers.conf
+//     HTTP_Server  On
+//     HTTP_Listen  0.0.0.0
+//     HTTP_Port    2020
+
+// [INPUT]
+//     Name              tail
+//     Tag               kube.*
+//     Path              /var/log/containers/*.log
+//     Parser            docker
+//     DB                /var/log/flb_kube.db
+//     Mem_Buf_Limit     5MB
+//     Skip_Long_Lines   On
+//     Refresh_Interval  10
+
+// [OUTPUT]
+//     Name        stdout
+//     Match       *
 // export const apiServiceIp = apiService.status.loadBalancer.ingress[0].ip;
 // export const ingressIp = ingressService.status.loadBalancer.ingress[0].ip;
