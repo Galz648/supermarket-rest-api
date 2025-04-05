@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SupermarketChain } from '../../data-access.service.js';
 import { Transformer } from '../transformers/transformer.js';
-import { Normalizer } from '../normalization/store-normalizer.interface.js';
+import { StoreNormalizer, ItemNormalizer } from '../normalization/store-normalizer.interface.js';
 import { ShufersalTransformerService } from '../transformers/shufersal-transformer.service.js';
 import { HaziHinamTransformerService } from '../transformers/hazi-hinam-transformer.service.js';
 import { UniformItem, UniformStore } from '../../schemas/uniform/index.js';
@@ -17,7 +17,10 @@ interface ChainRegistryEntry {
 
 interface ChainProcessors {
     transformer: Transformer;
-    normalizers: Normalizer<UniformItem | UniformStore>[];
+    normalizers?: [
+        StoreNormalizer?,
+        ItemNormalizer?
+    ];
 }
 
 /**
@@ -48,14 +51,6 @@ export class ChainRegistryService {
         }
     }
 
-    public getNormalizers(chain: SupermarketChain): Normalizer<UniformItem | UniformStore>[] {
-        if (!this.registry.has(chain) || this.registry.get(chain)!.processors.normalizers.length === 0) {
-            this.logger.warn(`No normalizers found for chain: ${chain} or no chain found`);
-            return [];
-        }
-        return this.registry.get(chain)!.processors.normalizers;
-
-    }
 
     /**
      * Initialize the registry with all supported chains
@@ -73,7 +68,7 @@ export class ChainRegistryService {
         const registryEntries = Array.from(this.registry.entries()).map(([chain, entry]) => ({
             chain,
             transformer: entry.processors.transformer.constructor.name,
-            normalizers: entry.processors.normalizers.map(n => n.constructor.name)
+            normalizers: entry.processors.normalizers?.map(n => n?.constructor.name) || []
         }));
 
         this.logger.debug('Registry:');

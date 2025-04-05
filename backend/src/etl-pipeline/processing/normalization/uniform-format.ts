@@ -80,12 +80,7 @@ export const NormalizationMaps = {
         ['STRAUSS', 'שטראוס'],
         ['OSEM', 'אסם']
     ]),
-    city: new Map([
-        ['5000', 'תל אביב'],
-        ['5001', 'ירושלים'],
-        ['5002', 'חיפה'],
-        ['5003', 'באר שבע']
-    ])
+    // city mappings are handled by each chain's normalizer
 };
 
 // Normalization functions
@@ -112,7 +107,4 @@ export const NormalizationFunctions = {
         return NormalizationMaps.manufacturer.get(manufacturer.toUpperCase()) || manufacturer;
     },
 
-    normalizeCity: (cityCode: string): string => {
-        return NormalizationMaps.city.get(cityCode) || cityCode;
-    }
 }; 

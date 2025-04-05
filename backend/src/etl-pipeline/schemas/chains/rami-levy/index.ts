@@ -3,6 +3,26 @@ import { z } from 'zod';
 // Helper function to handle both string and number values
 const stringOrNumber = z.union([z.string(), z.number().transform(n => String(n))]);
 
+const normalizeCity = (cityCode: string) => {
+    const city = new Map([
+        ['5000', 'תל אביב'],
+        ['5100', 'ירושלים'],
+        ['5200', 'חיפה'],
+        ['5300', 'באר שבע'],
+        ['5400', 'נתניה'],
+        ['5500', 'אשדוד'],
+        ['5600', 'ראשון לציון'],
+        ['5700', 'פתח תקווה'],
+        ['5800', 'חולון'],
+        ['5900', 'בני ברק']
+    ]).get(cityCode)
+
+    if (!city) {
+        console.warn(`City not found for city code: ${cityCode}`);
+        throw new Error(`City not found for city code: ${cityCode}`);
+    }
+    return city;
+}
 // Item schema for Rami Levy product data
 export const RamiLevyProductSchema = z.object({
     row_index: stringOrNumber,
@@ -43,7 +63,7 @@ export const RamiLevyStoreSchema = z.object({
         bikoretno: stringOrNumber,
         storename: z.string(),
         address: z.string(),
-        city: z.string(),
+        city: z.string().transform(normalizeCity),
         zipcode: z.string(),
         lastupdate: z.string().optional(),
         storetype: stringOrNumber

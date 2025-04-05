@@ -57,18 +57,18 @@ export class EtlPipelineService {
             }
 
             for (const chain of chainsToProcess) {
-                // Get transformer from the registry
+                // get transformer
                 const transformer = this.chainRegistry.getTransformer(chain);
-                this.logger.log(`Transformer for chain ${chain}: ${transformer.constructor.name}`);
-
-                // // Process stores
+                // fetch store data
                 const storeList = await this.dataAccess.extractStoreData(chain);
-                this.logger.log(`Processing ${storeList.length} stores for chain ${chain}`);
-
-                if (storeList.length == 0) {
-                    this.logger.warn(`No stores found for chain ${chain}`);
-                    continue;
-                }
+                // transform store data /+ normalize store data
+                const transformedStoreList = transformer.transformStoreData(storeList);
+                // load store data
+                await this.upsertStoresPipeline(chain, transformedStoreList);
+                // fetch product data
+                // transform product data /+ normalize product data
+                // load (product + productPrice data)
+                
 
                 // const chainHasNormalizers = this.chainRegistry.getNormalizers(chain).length > 0;
 
