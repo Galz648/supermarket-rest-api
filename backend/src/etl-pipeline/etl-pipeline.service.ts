@@ -12,7 +12,7 @@ import { Chain, Store, Item } from '@prisma/client';
 @Injectable()
 export class EtlPipelineService {
     private readonly logger = new Logger(EtlPipelineService.name);
-    private readonly CONCURRENCY_LIMIT = 1;
+    private readonly CONCURRENCY_LIMIT = 5;
 
     constructor(
         private readonly dataAccess: DataAccessService,
@@ -66,8 +66,11 @@ export class EtlPipelineService {
                 // load store data
                 await this.upsertStoresPipeline(chain, transformedStoreList);
                 // fetch product data
+                const productList = await this.dataAccess.extractProductData(chain);
                 // transform product data
+                const transformedProductList = transformer.transformProductData(productList);
                 // load (product + productPrice data)
+                await this.upsertProductsPipeline(chain, transformedProductList);
             }
 
         } catch (error) {
