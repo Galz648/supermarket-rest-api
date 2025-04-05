@@ -11,8 +11,13 @@ import { UniformItem, UniformStore } from '../../schemas/uniform/index.js';
  * Registry structure for a supermarket chain
  */
 interface ChainRegistryEntry {
-    transformer?: Transformer;
-    normalizer?: Normalizer<UniformItem | UniformStore>;
+    chain: SupermarketChain;
+    processors: ChainProcessors;
+}
+
+interface ChainProcessors {
+    transformer: Transformer;
+    normalizers: Normalizer<UniformItem | UniformStore>[];
 }
 
 /**
@@ -28,95 +33,55 @@ export class ChainRegistryService {
         private readonly shufersalTransformer: ShufersalTransformerService,
         private readonly haziHinamTransformer: HaziHinamTransformerService,
     ) {
-        this.initializeRegistry();
+        this.initializeRegistry([
+            { chain: SupermarketChain.SHUFERSAL, processors: { transformer: this.shufersalTransformer, normalizers: [] } },
+            { chain: SupermarketChain.HAZI_HINAM, processors: { transformer: this.haziHinamTransformer, normalizers: [] } },
+        ]);
     }
 
-    /**
-     * Register a transformer for a specific chain
-     * @param chain The supermarket chain
-     * @param transformer The transformer to register
-     */
-    registerTransformer(chain: SupermarketChain, transformer: Transformer): void {
-        if (!this.registry.has(chain)) {
-            this.registry.set(chain, { transformer });
-        } else {
-            this.registry.get(chain)!.transformer = transformer;
+    public getTransformer(chain: SupermarketChain): Transformer {
+        try {
+            return this.registry.get(chain)!.processors.transformer;
+        } catch (error) {
+            this.logger.error(`No transformer found for chain: ${chain}`);
+            throw error;
         }
-        this.logger.debug(`Registered transformer for chain: ${chain}`);
     }
 
-    /**
-     * Register a normalizer for a specific chain
-     * @param chain The supermarket chain
-     * @param normalizer The normalizer to register
-     */
-    registerNormalizer(chain: SupermarketChain, normalizer: Normalizer<UniformItem | UniformStore>): void {
-        if (!this.registry.has(chain)) {
-            this.registry.set(chain, { normalizer });
-        } else {
-            this.registry.get(chain)!.normalizer = normalizer;
+    public getNormalizers(chain: SupermarketChain): Normalizer<UniformItem | UniformStore>[] {
+        if (!this.registry.has(chain) || this.registry.get(chain)!.processors.normalizers.length === 0) {
+            this.logger.warn(`No normalizers found for chain: ${chain} or no chain found`);
+            return [];
         }
-        this.logger.debug(`Registered normalizer for chain: ${chain}`);
+        return this.registry.get(chain)!.processors.normalizers;
+
     }
 
     /**
      * Initialize the registry with all supported chains
      */
-    private initializeRegistry(): void {
+    private initializeRegistry(
+        chainProcessors: ChainRegistryEntry[]
+    ): void {
         this.logger.log('Initializing chain registry...');
 
-        // Register Shufersal components
-        this.registerTransformer(SupermarketChain.SHUFERSAL, this.shufersalTransformer);
-
-        // Register Hazi Hinam components
-        this.registerTransformer(SupermarketChain.HAZI_HINAM, this.haziHinamTransformer);
-
-        // Register other transformers and normalizers as needed
-
-        this.logger.log(`Successfully initialized registry with ${this.registry.size} chains`);
-    }
-
-    /**
-     * Get the transformer for a specific chain
-     * @param chain The supermarket chain
-     * @returns The transformer for the chain
-     */
-    getTransformer(chain: SupermarketChain): Transformer {
-        const entry = this.registry.get(chain);
-        if (!entry || !entry.transformer) {
-            throw new Error(`No transformer found for chain: ${chain}`);
+        for (const chainProcessor of chainProcessors) {
+            this.registry.set(chainProcessor.chain, chainProcessor);
         }
-        return entry.transformer;
+
+        this.logger.debug(`Successfully initialized registry with ${this.registry.size} chains`);
+        const registryEntries = Array.from(this.registry.entries()).map(([chain, entry]) => ({
+            chain,
+            transformer: entry.processors.transformer.constructor.name,
+            normalizers: entry.processors.normalizers.map(n => n.constructor.name)
+        }));
+
+        this.logger.debug('Registry:');
+        registryEntries.forEach(entry => {
+            this.logger.debug(`Chain: ${entry.chain}`);
+            this.logger.debug(`  Transformer: ${entry.transformer}`);
+            this.logger.debug(`  Normalizers: ${entry.normalizers.join(', ')}`);
+        });
     }
 
-    /**
-     * Get the normalizer for a specific chain if available
-     * @param chain The supermarket chain
-     * @returns The normalizer for the chain or undefined if not available
-     */
-    getStoreNormalizer(chain: SupermarketChain): Normalizer<UniformItem | UniformStore> | undefined {
-        const entry = this.registry.get(chain);
-        if (!entry) {
-            throw new Error(`No registry entry found for chain: ${chain}`);
-        }
-        return entry.normalizer;
-    }
-
-    /**
-     * Check if a chain has a store normalizer
-     * @param chain The supermarket chain
-     * @returns Whether the chain has a normalizer
-     */
-    hasStoreNormalizer(chain: SupermarketChain): boolean {
-        const entry = this.registry.get(chain);
-        return !!entry && !!entry.normalizer;
-    }
-
-    /**
-     * Get all registered chains
-     * @returns Array of registered chain enums
-     */
-    getRegisteredChains(): SupermarketChain[] {
-        return Array.from(this.registry.keys());
-    }
 } 

@@ -18,6 +18,7 @@ export class EtlPipelineService {
         private readonly dataAccess: DataAccessService,
         private readonly chainRegistry: ChainRegistryService,
         private readonly prisma: PrismaService,
+
     ) { }
 
     async determineChainsToProcess(): Promise<SupermarketChain[]> {
@@ -58,20 +59,18 @@ export class EtlPipelineService {
             for (const chain of chainsToProcess) {
                 // Get transformer from the registry
                 const transformer = this.chainRegistry.getTransformer(chain);
-                this.logger.log(`Transformer for chain ${chain}: ${transformer}`);
+                this.logger.log(`Transformer for chain ${chain}: ${transformer.constructor.name}`);
 
                 // // Process stores
-                // const storeList = await this.dataAccess.extractStoreData(chain);
+                const storeList = await this.dataAccess.extractStoreData(chain);
+                this.logger.log(`Processing ${storeList.length} stores for chain ${chain}`);
 
-                // if (this.chainRegistry.hasStoreNormalizer(chain)) {
-                //     // Process using normalizer if available
-                //     const normalizer = this.chainRegistry.getStoreNormalizer(chain);
-                //     if (normalizer) {
-                //         const normalizedStoreList = normalizer.normalizeStoreData(storeList);
-                //         this.logger.log(`Processing ${normalizedStoreList.length} normalized stores for chain ${chain}`);
-                //         await this.upsertStoresPipeline(chain, normalizedStoreList);
-                //     }
-                // }
+                if (storeList.length == 0) {
+                    this.logger.warn(`No stores found for chain ${chain}`);
+                    continue;
+                }
+
+                // const chainHasNormalizers = this.chainRegistry.getNormalizers(chain).length > 0;
 
                 // // Process products
                 // const productList = await this.dataAccess.extractProductData(chain);

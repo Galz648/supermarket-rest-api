@@ -30,12 +30,12 @@ export interface Normalizer<T> {
      * @param data The raw data to normalize
      * @returns Normalized data in the target format
      */
-    normalize(data: RawFileContent[]): T[];
+    normalize(data: T[]): T[];
 
     /**
      * Normalize store data from a specific supermarket chain to a uniform format
      * @param storeData The raw store data from the supermarket chain
      * @returns Normalized store data in the uniform format
      */
-    normalizeStoreData(storeData: RawFileContent[]): UniformStore[];
+    normalizeStoreData(storeData: T[]): T[];
 }

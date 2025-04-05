@@ -36,6 +36,9 @@ backend/
 ```
 
 
+# TODOs:
+* implement path aliases for cleaner imports
+
 ## 💾 Data Model (Roughly)
 
 ```
