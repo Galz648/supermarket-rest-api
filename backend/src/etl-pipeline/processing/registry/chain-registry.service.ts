@@ -1,11 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SupermarketChain } from '../../data-access.service.js';
 import { Transformer } from '../transformers/transformer.js';
-import { StoreNormalizer, ItemNormalizer } from '../normalization/store-normalizer.interface.js';
 import { ShufersalTransformerService } from '../transformers/shufersal-transformer.service.js';
 import { HaziHinamTransformerService } from '../transformers/hazi-hinam-transformer.service.js';
 import { UniformItem, UniformStore } from '../../schemas/uniform/index.js';
-// Import other transformers and normalizers as needed
 
 /**
  * Registry structure for a supermarket chain
@@ -17,15 +15,11 @@ interface ChainRegistryEntry {
 
 interface ChainProcessors {
     transformer: Transformer;
-    normalizers?: [
-        StoreNormalizer?,
-        ItemNormalizer?
-    ];
 }
 
 /**
  * Central registry for all chain-specific components
- * Maps each chain to its transformer and optional normalizers
+ * Maps each chain to its transformer
  */
 @Injectable()
 export class ChainRegistryService {
@@ -37,8 +31,8 @@ export class ChainRegistryService {
         private readonly haziHinamTransformer: HaziHinamTransformerService,
     ) {
         this.initializeRegistry([
-            { chain: SupermarketChain.SHUFERSAL, processors: { transformer: this.shufersalTransformer, normalizers: [] } },
-            { chain: SupermarketChain.HAZI_HINAM, processors: { transformer: this.haziHinamTransformer, normalizers: [] } },
+            { chain: SupermarketChain.SHUFERSAL, processors: { transformer: this.shufersalTransformer } },
+            { chain: SupermarketChain.HAZI_HINAM, processors: { transformer: this.haziHinamTransformer } },
         ]);
     }
 
@@ -50,7 +44,6 @@ export class ChainRegistryService {
             throw error;
         }
     }
-
 
     /**
      * Initialize the registry with all supported chains
@@ -67,16 +60,13 @@ export class ChainRegistryService {
         this.logger.debug(`Successfully initialized registry with ${this.registry.size} chains`);
         const registryEntries = Array.from(this.registry.entries()).map(([chain, entry]) => ({
             chain,
-            transformer: entry.processors.transformer.constructor.name,
-            normalizers: entry.processors.normalizers?.map(n => n?.constructor.name) || []
+            transformer: entry.processors.transformer.constructor.name
         }));
 
         this.logger.debug('Registry:');
         registryEntries.forEach(entry => {
             this.logger.debug(`Chain: ${entry.chain}`);
             this.logger.debug(`  Transformer: ${entry.transformer}`);
-            this.logger.debug(`  Normalizers: ${entry.normalizers.join(', ')}`);
         });
     }
-
 } 
