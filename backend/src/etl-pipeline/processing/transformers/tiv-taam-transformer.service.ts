@@ -18,6 +18,7 @@ export class TivTaamTransformerService implements Transformer {
         }
 
         // First parse the raw data into TivTaamProduct objects
+        // TODO: determine if safeParse is more suitable
         const products = this.transformItems(productData, (row) => TivTaamProductSchema.parse(row));
 
         // Then map to the standard format
@@ -100,6 +101,7 @@ export class TivTaamTransformerService implements Transformer {
             return [];
         }
 
+        // TODO: determine if safeParse is more suitable
         const stores = this.transformItems(storeData, (row) => tivTaamStoreSchema.parse(row));
 
         // Map to the uniform store format

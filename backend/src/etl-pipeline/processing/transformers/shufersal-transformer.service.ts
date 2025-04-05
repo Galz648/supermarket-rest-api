@@ -17,6 +17,7 @@ export class ShufersalTransformerService implements Transformer {
         }
 
         // First parse the raw data into ShufersalProduct objects
+        // TODO: determine if safeParse is more suitable
         const products = this.transformItems(productData, (row) => ShufersalProductSchema.parse(row));
 
         // Then map to the standard format
@@ -102,6 +103,7 @@ export class ShufersalTransformerService implements Transformer {
             return [];
         }
 
+        // TODO: determine if safeParse is more suitable
         const stores = this.transformItems(storeData, (row) => ShufersalStoreSchema.parse(row));
 
         // Map to the uniform store format

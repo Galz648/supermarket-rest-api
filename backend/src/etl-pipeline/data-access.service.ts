@@ -45,7 +45,7 @@ export enum SupermarketChain {
 const supportedChainsMapping: Map<SupermarketChain, boolean> = new Map([
     [SupermarketChain.SHUFERSAL, false],
     [SupermarketChain.HAZI_HINAM, false],
-    [SupermarketChain.RAMI_LEVY, false],
+    [SupermarketChain.RAMI_LEVY, true],
     [SupermarketChain.VICTORY, false],
     [SupermarketChain.YOCHANANOF, false],
     [SupermarketChain.TIV_TAAM, false],

@@ -18,6 +18,7 @@ export class RamiLevyTransformerService implements Transformer {
         }
 
         // First parse the raw data into RamiLevyProduct objects
+        // TODO: determine if safeParse is more suitable
         const products = this.transformItems(productData, (row) => RamiLevyProductSchema.parse(row));
 
         // Then map to the standard format
@@ -72,6 +73,7 @@ export class RamiLevyTransformerService implements Transformer {
                 const item = mapFunction(row);
                 items.push(item);
             } catch (error) {
+                this.logger.log(`item row: ${JSON.stringify(row)}`);
                 this.logger.error(`Error transforming item row: ${error.message}`, error.stack);
                 // Continue with next row
             }
@@ -82,6 +84,7 @@ export class RamiLevyTransformerService implements Transformer {
     }
 
     toUniformStore(store: RamiLevyStore): UniformStore {
+        this.logger.log(`Transforming store: ${store.row_content.storeid}, Name: ${store.row_content.storename}, Address: ${store.row_content.address}, City: ${store.row_content.city}`);
         return {
             chainId: store.row_content.chainid,
             storeId: store.row_content.storeid,
@@ -98,6 +101,7 @@ export class RamiLevyTransformerService implements Transformer {
             return [];
         }
 
+        // TODO: determine if safeParse is more suitable
         const stores = this.transformItems(storeData, (row) => RamiLevyStoreSchema.parse(row));
 
         // Map to the uniform store format

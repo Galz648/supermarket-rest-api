@@ -64,13 +64,14 @@ export class EtlPipelineService {
                 // transform store data
                 const transformedStoreList = transformer.transformStoreData(storeList);
                 // load store data
-                await this.upsertStoresPipeline(chain, transformedStoreList);
-                // fetch product data
-                const productList = await this.dataAccess.extractProductData(chain);
-                // transform product data
-                const transformedProductList = transformer.transformProductData(productList);
-                // load (product + productPrice data)
-                await this.upsertProductsPipeline(chain, transformedProductList);
+
+                // await this.upsertStoresPipeline(chain, transformedStoreList);
+                // // fetch product data
+                // const productList = await this.dataAccess.extractProductData(chain);
+                // // transform product data
+                // const transformedProductList = transformer.transformProductData(productList);
+                // // load (product + productPrice data)
+                // await this.upsertProductsPipeline(chain, transformedProductList);
             }
 
         } catch (error) {

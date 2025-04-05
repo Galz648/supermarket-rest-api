@@ -17,6 +17,7 @@ export class HaziHinamTransformerService implements Transformer {
             return [];
         }
 
+        // TODO: determine if safeParse is more suitable
         const products = this.transformItems(productData, (row) => HaziHinamProductSchema.parse(row));
 
         // Map to the uniform product format
@@ -29,6 +30,7 @@ export class HaziHinamTransformerService implements Transformer {
             return [];
         }
 
+        // TODO: determine if safeParse is more suitable
         const stores = this.transformItems(storeData, (row) => HaziHinamStoreSchema.parse(row));
 
         // Map to the uniform store format

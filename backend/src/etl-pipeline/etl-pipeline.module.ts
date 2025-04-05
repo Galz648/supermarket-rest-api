@@ -9,7 +9,7 @@ import { TivTaamTransformerService } from './processing/transformers/tiv-taam-tr
 import { PrismaModule } from '../prisma/prisma.module.js';
 import { EtlPipelineController } from './etl-pipeline.controller.js';
 import { ChainRegistryService } from './processing/registry/chain-registry.service.js';
-
+import { RamiLevyTransformerService } from './processing/transformers/rami-levy-transformer.service.js';
 @Module({
     imports: [
         ConfigModule,
@@ -26,6 +26,7 @@ import { ChainRegistryService } from './processing/registry/chain-registry.servi
         ShufersalTransformerService,
         HaziHinamTransformerService,
         TivTaamTransformerService,
+        RamiLevyTransformerService,
 
         // Registry
         ChainRegistryService,

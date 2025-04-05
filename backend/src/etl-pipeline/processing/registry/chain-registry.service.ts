@@ -4,6 +4,7 @@ import { Transformer } from '../transformers/transformer.js';
 import { ShufersalTransformerService } from '../transformers/shufersal-transformer.service.js';
 import { HaziHinamTransformerService } from '../transformers/hazi-hinam-transformer.service.js';
 import { TivTaamTransformerService } from '../transformers/tiv-taam-transformer.service.js';
+import { RamiLevyTransformerService } from '../transformers/rami-levy-transformer.service.js';
 
 /**
  * Registry structure for a supermarket chain
@@ -30,11 +31,13 @@ export class ChainRegistryService {
         private readonly shufersalTransformer: ShufersalTransformerService,
         private readonly haziHinamTransformer: HaziHinamTransformerService,
         private readonly tivTaamTransformer: TivTaamTransformerService,
+        private readonly ramiLevyTransformer: RamiLevyTransformerService,
     ) {
         this.initializeRegistry([
             { chain: SupermarketChain.SHUFERSAL, processors: { transformer: this.shufersalTransformer } },
             { chain: SupermarketChain.HAZI_HINAM, processors: { transformer: this.haziHinamTransformer } },
             { chain: SupermarketChain.TIV_TAAM, processors: { transformer: this.tivTaamTransformer } },
+            { chain: SupermarketChain.RAMI_LEVY, processors: { transformer: this.ramiLevyTransformer } },
         ]);
     }
 
