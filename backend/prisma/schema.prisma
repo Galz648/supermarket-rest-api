@@ -8,90 +8,73 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-model Item {
-    id       String      @id @default(auto()) @map("_id") @db.ObjectId
-    itemCode String      @unique //TODO: handle duplicate
-    name     String
-    unit     String
-    category String
-    brand    String
-    prices   ItemPrice[]
-    //   Promotion Promotion[]
-    // ItemPromotion ItemPromotion[]
-}
-
 model Chain {
-    id     String  @id @default(auto()) @map("_id") @db.ObjectId
-    name   String  @unique
-    stores Store[]
+    id      String  @id @default(auto()) @map("_id") @db.ObjectId
+    chainId String  @unique // Keep for external reference
+    name    String  @unique
+    stores  Store[]
 }
 
 model Store {
-    id        String      @id @default(auto()) @map("_id") @db.ObjectId // unique Mongo ID
-    storeId   String
-    name      String
-    chain     Chain       @relation(fields: [chainName], references: [name], onDelete: Cascade)
-    chainName String
-    address   String
-    prices    ItemPrice[]
-    city      String
-    zipCode   String
-    // ItemPromotion ItemPromotion[]
+    id            String      @id @default(auto()) @map("_id") @db.ObjectId
+    storeId       String // Keep for external reference
+    name          String
+    chain         Chain       @relation(fields: [chainObjectId], references: [id], onDelete: Cascade)
+    chainObjectId String      @db.ObjectId // MongoDB ObjectId reference
+    chainId       String // Keep for external reference
+    address       String
+    prices        ItemPrice[]
+    city          String
+    zipCode       String
+    // productPromotions      ProductPromotion[]
 
-    @@unique([chainName, storeId], name: "chainName_storeId")
+    @@unique([chainId, storeId], name: "chainId_storeId")
+    @@index([city])
 }
 
-// model ItemPrice {
-//     id        String   @id @default(auto()) @map("_id") @db.ObjectId
-//     item      Item     @relation(fields: [itemId], references: [id])
-//     itemId    String   @db.ObjectId
-//     itemCode  String   @unique
-//     price     Float
-//     currency  String
-//     store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
-//     storeId   String // TODO: determine if this should be a Many to Many relationship or a One to Many relationship (item price can only have one store, but a store can have many item prices)
-//     timestamp DateTime @default(now())
-//     chainName String
-
-//     @@unique([chainName, storeId, itemId, timestamp], name: "unique_item_store_timestamp")
-// }
+model Item {
+    id       String      @id @default(auto()) @map("_id") @db.ObjectId
+    itemCode String      @unique // Keep for external reference
+    name     String
+    unit     String
+    category String?
+    brand    String?
+    prices   ItemPrice[]
+    // productPromotions ProductPromotion[]
+}
 
 model ItemPrice {
     id       String @id @default(auto()) @map("_id") @db.ObjectId
     itemId   String @db.ObjectId
     item     Item   @relation(fields: [itemId], references: [id])
-    itemCode String // external ID, for redundancy/search
+    itemCode String // Keep for external reference
 
-    storeInternalId String @db.ObjectId
-    store           Store  @relation(fields: [storeInternalId], references: [id], onDelete: Cascade)
-    storeId         String
+    storeObjectId String @db.ObjectId
+    store         Store  @relation(fields: [storeObjectId], references: [id], onDelete: Cascade)
+    storeId       String // Keep for external reference
 
-    chainId   String // optional: denormalized for easier querying
-    price     Float
-    currency  String
-    timestamp DateTime
+    chainObjectId String   @db.ObjectId // MongoDB ObjectId reference
+    chainId       String // Keep for external reference
+    price         Float
+    currency      String
+    timestamp     DateTime
 
     @@unique([chainId, storeId, itemId, timestamp], name: "unique_price_entry")
+    @@index([chainId, storeId, itemId])
 }
-
-// model Promotion {
-//   id       String @id @default(auto()) @map("_id") @db.ObjectId
-//   itemId   String @db.ObjectId
-//   item     Item   @relation(fields: [itemId], references: [id])
-//   itemCode String // external ID, for redundancy/search
-// }
 
 // model ItemPromotion {
 //     id       String @id @default(auto()) @map("_id") @db.ObjectId
 //     itemId   String @db.ObjectId
 //     item     Item   @relation(fields: [itemId], references: [id])
-//     itemCode String // external ID, for redundancy/search
+//     itemCode String // Keep for external reference
 
 //     // Store and Chain information
-//     storeInternalId String @db.ObjectId
-//     store           Store  @relation(fields: [storeInternalId], references: [id], onDelete: Cascade)
-//     storeId         String
-//     chainId         String // denormalized for easier querying
+//     storeObjectId String @db.ObjectId
+//     store         Store  @relation(fields: [storeObjectId], references: [id], onDelete: Cascade)
+//     storeId       String // Keep for external reference
+//     chainObjectId String @db.ObjectId // MongoDB ObjectId reference
+//     chainId       String // Keep for external reference
 
 //     // Promotion details
 //     promotionId           String

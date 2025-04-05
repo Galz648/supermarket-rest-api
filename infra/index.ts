@@ -1,124 +1,320 @@
-import * as digitalocean from "@pulumi/digitalocean";
 import * as kubernetes from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 
 // Enable some configurable parameters.
 const config = new pulumi.Config();
-const nodeCount = config.getNumber("nodeCount") || 1;
 const appReplicaCount = config.getNumber("appReplicaCount") || 1;
-// const domainName = config.get("domainName") || "israeli-supermarkets.xyz";
-const domainName = config.get("domainName");
 
-// Provision a DigitalOcean Kubernetes cluster and export its resulting
-// kubeconfig to make it easy to access from the kubectl command line.
-const cluster = new digitalocean.KubernetesCluster("do-cluster", {
-    region: digitalocean.Region.FRA1,
-    version: digitalocean.getKubernetesVersions().then(p => p.latestVersion),
-    nodePool: {
-        name: "default",
-        size: digitalocean.DropletSlug.DropletS2VCPU2GB,
-        nodeCount: nodeCount,
+// Create a Kubernetes provider that uses the current context
+const provider = new kubernetes.Provider("k8s", {});
+const external_supermarket_service_domain = "http://erlichsefi.ddns.net:8080/service_health";
+const AUTH_TOKEN = config.requireSecret("authToken");
+
+const api_name = "supermarket-api-backend";
+const api_version = "v1.0.3";
+const api_image_tag = `${api_name}:${api_version}`;
+const apiLabels = { "name": api_name, "version": api_version, "internal_port": "3000" };
+
+const monitoringNamespace = new kubernetes.core.v1.Namespace("monitoring", {
+    metadata: {
+        name: "monitoring",
     },
-});
+}, { provider });
 
-// The DigitalOcean Kubernetes cluster periodically gets a new certificate
-// so we look up the cluster by name and get the current kubeconfig after
-// initial provisioning. You'll notice that the `certificate-authority-data`
-// field changes on every `pulumi update`.
-const kubeconfig = cluster.status.apply(status => {
-    if (status === "running") {
-        const clusterDataSource = cluster.name.apply(name => digitalocean.getKubernetesCluster({ name }));
-        return clusterDataSource.kubeConfigs[0].rawConfig;
-    } else {
-        return cluster.kubeConfigs[0].rawConfig;
-    }
-});
+// // Install nginx-ingress controller
+// const nginxIngress = new kubernetes.helm.v3.Release("nginx-ingress", {
+//     chart: "ingress-nginx",
+//     namespace: "ingress-nginx",
+//     createNamespace: true,
+//     repositoryOpts: {
+//         repo: "https://kubernetes.github.io/ingress-nginx",
+//     },
+//     values: {
+//         controller: {
+//             admissionWebhooks: {
+//                 enabled: false,
+//               },
+//             service: {
+//                 type: "LoadBalancer",
+//             },
+//         },
+//     },
+// }, { provider });
 
-// Now lets actually deploy an application to our new cluster. We begin
-// by creating a new "Provider" object that uses our kubeconfig above,
-// so that any application objects deployed go to our new cluster.
-const provider = new kubernetes.Provider("do-k8s", { kubeconfig });
+// Get the ingress controller service created by Helm
+// const ingressService = kubernetes.core.v1.Service.get("ingress-nginx-controller", pulumi.interpolate`${nginxIngress.namespace}/ingress-nginx-controller`, { provider });
 
-// Now create a Kubernetes Deployment using the "nginx" container
-// image from the Docker Hub, replicated a number of times, and a
-// load balanced Service in front listening for traffic on port 80.
+// Install kube-prometheus-stack
+const prometheusStack = new kubernetes.helm.v3.Release("kube-prometheus-stack", {
+    chart: "kube-prometheus-stack",
+    namespace: monitoringNamespace.metadata.name,
+    repositoryOpts: {
+        repo: "https://prometheus-community.github.io/helm-charts",
+    },
+    values: {
+        grafana: {
+            enabled: true,
+            adminPassword: "admin", // TODO: You should change this in production
+        },
+        prometheus: {
+            prometheusSpec: {
+                retention: "15d",
+                resources: {
+                    requests: {
+                        memory: "256Mi",
+                        cpu: "100m",
+                    },
+                    limits: {
+                        memory: "512Mi",
+                        cpu: "500m",
+                    },
+                },
+            },
+        },
+    },
+}, { provider });
 
-// const do_registry_url = "registry.digitalocean.com/israeli-supermarkets-container-registry";
-const image_version = "v1.0.3";
-// const api_image_tag = `${do_registry_url}/backend-api:${image_version}`;
-const api_image_tag = `backend-api:${image_version}`;
-const apiLabels = { "app": "api" };
-const appLabels = { "app": "app-nginx" };
-
-
-const apiDeployment = new kubernetes.apps.v1.Deployment("do-api-dep", {
+// Install blackbox-exporter
+const blackboxExporter = new kubernetes.helm.v3.Release("blackbox-exporter", {
+    chart: "prometheus-blackbox-exporter",
+    namespace: monitoringNamespace.metadata.name,
+    repositoryOpts: {
+        repo: "https://prometheus-community.github.io/helm-charts",
+    },
+    values: {
+        config: {
+            modules: {
+                http_2xx: {
+                    prober: "http",
+                    timeout: "5s",
+                    http: {
+                        method: "GET",
+                        preferred_ip_protocol: "ip4",
+                        headers: {
+                            "Authorization": pulumi.interpolate`Bearer ${AUTH_TOKEN}`
+                        }
+                    },
+                },
+                http_post_2xx: {
+                    prober: "http",
+                    timeout: "5s",
+                    http: {
+                        method: "POST",
+                        preferred_ip_protocol: "ip4",
+                        headers: {
+                            "Authorization": pulumi.interpolate`Bearer ${AUTH_TOKEN}`
+                        }
+                    },
+                },
+            },
+        },
+    },
+}, { provider });
+const apiDeployment = new kubernetes.apps.v1.Deployment("api-dep", {
+    metadata: {
+        name: "api-dep",
+        namespace: monitoringNamespace.metadata.name // Add the deployment to the right namespace
+    },
     spec: {
-        selector: { matchLabels: apiLabels },
         replicas: 1,
+        selector: { matchLabels: apiLabels },
         template: {
             metadata: { labels: apiLabels },
             spec: {
-                containers: [{
-                    imagePullPolicy: "Never",
-                    name: "backend-api",
-                    image: api_image_tag,
-                    ports: [{ containerPort: 80 }],
-                }],
-            },
-        },
-    },
+                containers: [
+                    {
+                        name: apiLabels.name,
+                        image: api_image_tag,
+                        imagePullPolicy: "IfNotPresent",
+                        ports: [{ containerPort: parseInt(apiLabels.internal_port) }],
+                        volumeMounts: [{
+                            name: "shared-logs",
+                            mountPath: "/app/logs"
+                        }],
+                        env: [
+                            { name: "LOG_PATH", value: "/app/logs/output.log" } // optional: your app should log to this
+                        ]
+                    },
+                    {
+                        name: "fluent-bit",
+                        image: "fluent/fluent-bit:latest",
+                        volumeMounts: [{
+                            name: "shared-logs",
+                            mountPath: "/app/logs"
+                        },
+                        {
+                            name: "config",
+                            mountPath: "/fluent-bit/etc"
+                        }],
+                        args: ["-c", "/fluent-bit/etc/fluent-bit.conf"]
+                    }
+                ],
+                volumes: [
+                    {
+                        name: "shared-logs",
+                        emptyDir: {}
+                    },
+                    {
+                        name: "config",
+                        configMap: {
+                            name: "fluent-bit-config"
+                        }
+                    }
+                ]
+            }
+        }
+    }
 }, { provider });
 
-const apiService = new kubernetes.core.v1.Service("do-api-svc", {
-    spec: {
-        type: "LoadBalancer",
-        selector: apiLabels,
-        ports: [{ port: 80, targetPort: 80 }],
-    },
+import * as k8s from "@pulumi/kubernetes";
+
+const fluentBitConfig = new k8s.core.v1.ConfigMap("fluent-bit-config", {
+    metadata: { name: "fluent-bit-config", namespace: monitoringNamespace.metadata.name }, // or your namespace
+    data: {
+        "fluent-bit.conf": `
+[SERVICE]
+    Flush        1
+    Daemon       off
+    Log_Level    info
+    Parsers_File parsers.conf
+
+[INPUT]
+    Name    tail
+    Path    /app/logs/*.log
+    Parser  docker
+    Tag     app.logs
+
+[OUTPUT]
+    Name   stdout
+    Match  *
+`,
+        "parsers.conf": `
+[PARSER]
+    Name        docker
+    Format      json
+    Time_Key    time
+    Time_Format %Y-%m-%dT%H:%M:%S.%L
+    Time_Keep   On
+`
+    }
 });
-const app = new kubernetes.apps.v1.Deployment("do-app-dep", {
+
+// const apiService = new kubernetes.core.v1.Service("api-svc", {
+//     spec: {
+//         type: "ClusterIP", // Changed to ClusterIP since we'll use ingress
+//         selector: apiLabels,
+//         ports: [{ port: parseInt(apiLabels.internal_port), targetPort: parseInt(apiLabels.internal_port) }],
+//     },
+// }, { provider });
+
+// Create an Ingress resource for the API
+// const apiIngress = new kubernetes.networking.v1.Ingress("api-ingress", {
+//     metadata: {
+//         annotations: {
+//             "nginx.ingress.kubernetes.io/rewrite-target": "/",
+//         },
+//     },
+//     spec: {
+//         ingressClassName: "nginx",
+//         rules: [{
+//             http: {
+//                 paths: [{
+//                     path: "/api",
+//                     pathType: "Prefix",
+//                     backend: {
+//                         service: {
+//                             name: apiService.metadata.name,
+//                             port: {
+//                                 number: parseInt(apiLabels.internal_port),
+//                             },
+//                         },
+//                     },
+//                 }],
+//             },
+//         }],
+//     },
+// }, { provider });
+
+// Create a ServiceMonitor for blackbox exporter
+const blackboxServiceMonitor = new kubernetes.apiextensions.CustomResource("blackbox-monitor", {
+    apiVersion: "monitoring.coreos.com/v1",
+    kind: "ServiceMonitor",
+    metadata: {
+        name: "blackbox-monitor",
+        namespace: monitoringNamespace.metadata.name,
+        labels: {
+            release: prometheusStack.name,
+        },
+    },
     spec: {
-        selector: { matchLabels: appLabels },
-        replicas: appReplicaCount,
-        template: {
-            metadata: { labels: appLabels },
-            spec: {
-                containers: [{
-                    name: "nginx",
-                    image: "nginx",
-                }],
+        endpoints: [
+            {
+                port: "http",
+                interval: "5s",
+                path: "/probe",
+                params: {
+                    module: ["http_2xx"],
+                    target: [external_supermarket_service_domain],
+                },
+            },
+            // {
+            //     port: "http",
+            //     interval: "30s",
+            //     path: "/probe",
+            //     params: {
+            //         module: ["http_2xx"],
+            //         target: [`http://${apiService.status.loadBalancer.ingress[0].ip}/api`],
+            //     },
+            // },
+        ],
+        selector: {
+            matchLabels: {
+                "app.kubernetes.io/name": "prometheus-blackbox-exporter",
             },
         },
     },
 }, { provider });
-const appService = new kubernetes.core.v1.Service("do-app-svc", {
-    spec: {
-        type: "LoadBalancer",
-        selector: app.spec.template.metadata.labels,
-        ports: [{
-            port: 80,
-            targetPort: 80,
-        }],
-    },
-}, { provider });
 
-const ingressIp = appService.status.loadBalancer.ingress[0].ip;
-// Finally, optionally set up a DigitalOcean DNS entry for our
-// resulting load balancer's IP address. This gives us a stable URL
-// for our cluster'sapplication.
-if (domainName) {
-    const domain = new digitalocean.Domain("do-domain", {
-        name: domainName,
-        ipAddress: ingressIp,
-    });
+// // Install Loki for log aggregation
+// const loki = new kubernetes.helm.v3.Release("loki", {
+//     chart: "loki",
+//     namespace: monitoringNamespace.metadata.name,
+//     version: "3.4.0",
+//     repositoryOpts: {
+//         repo: "https://grafana.github.io/helm-charts",
+//     },
+//     // values: {
+//     //     persistence: {
+//     //         enabled: true,
+//     //         size: "1Gi",
+//     //     },
+//     // },
+// }, { provider });
 
-    const cnameRecord = new digitalocean.DnsRecord("do-domain-cname", {
-        domain: domain.name,
-        type: "CNAME",
-        name: "www",
-        value: "@",
-    });
-}
+// Install Fluent Bit for log collection
 
-export { kubeconfig }
-export { ingressIp }
+// const fluentBitConfig = `
+// [SERVICE]
+//     Flush        1
+//     Log_Level    info
+//     Daemon       off
+//     Parsers_File parsers.conf
+//     HTTP_Server  On
+//     HTTP_Listen  0.0.0.0
+//     HTTP_Port    2020
+
+// [INPUT]
+//     Name              tail
+//     Tag               kube.*
+//     Path              /var/log/containers/*.log
+//     Parser            docker
+//     DB                /var/log/flb_kube.db
+//     Mem_Buf_Limit     5MB
+//     Skip_Long_Lines   On
+//     Refresh_Interval  10
+
+// [OUTPUT]
+//     Name        stdout
+//     Match       *
+// export const apiServiceIp = apiService.status.loadBalancer.ingress[0].ip;
+// export const ingressIp = ingressService.status.loadBalancer.ingress[0].ip;

@@ -16,10 +16,42 @@ export class ItemsController {
   @Get('search')
   @ApiOperation({ summary: 'Search items by name' })
   @ApiQuery({ name: 'query', required: true, description: 'Search query' })
-  @ApiResponse({ status: 200, description: 'Returns matching items' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns matching items with availability information',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'Item ID' },
+          itemCode: { type: 'string', description: 'Item barcode/code' },
+          name: { type: 'string', description: 'Item name' },
+          unit: { type: 'string', description: 'Unit of measurement' },
+          category: { type: 'string', description: 'Category ID' },
+          brand: { type: 'string', description: 'Brand name' },
+          isAvailable: { type: 'boolean', description: 'Whether the item is available in any store' },
+          availableStores: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                storeId: { type: 'string', description: 'Store ID' },
+                storeName: { type: 'string', description: 'Store name' },
+                city: { type: 'string', description: 'Store city' },
+                price: { type: 'number', description: 'Item price' },
+                currency: { type: 'string', description: 'Price currency' },
+                lastUpdated: { type: 'string', description: 'Last price update timestamp' }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
   async search(
     @Query('query') query: string,
-  ): Promise<Item[]> {
+  ) {
     return this.itemsService.search(query);
   }
 
@@ -31,15 +63,20 @@ export class ItemsController {
   async findByBarcode(@Param('barcode') barcode: string): Promise<Item> {
     return this.itemsService.findByBarcode(barcode);
   }
+
   @Get('chain/:chainId/stores/:storeId/items/:itemId/price')
   @ApiOperation({ summary: 'Get price by store ID and item ID for a specific chain' })
-  @ApiParam({ name: 'chainName', description: 'Chain name' })
-  @ApiParam({ name: 'storeId', description: 'Store ID' })
-  @ApiParam({ name: 'itemId', description: 'Item ID' })
+  @ApiParam({ name: 'chainId', description: 'Chain ObjectId' })
+  @ApiParam({ name: 'storeId', description: 'Store ObjectId' })
+  @ApiParam({ name: 'itemId', description: 'Item ObjectId' })
   @ApiResponse({ status: 200, description: 'Returns the price information' })
   @ApiResponse({ status: 404, description: 'Price not found' })
-  async getPriceByStoreIdAndItemId(@Param('chainName') chainName: string, @Param('storeId') storeId: string, @Param('itemId') itemId: string) {
-    return this.itemsService.getPriceByStoreIdAndItemId(chainName, storeId, itemId);
+  async getPriceByStoreIdAndItemId(
+    @Param('chainId') chainId: string,
+    @Param('storeId') storeId: string,
+    @Param('itemId') itemId: string
+  ) {
+    return this.itemsService.getPriceByStoreIdAndItemId(chainId, storeId, itemId);
   }
 }
 

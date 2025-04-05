@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosError } from 'axios';
 
 // API response types
 export interface AvailableChains {
@@ -35,14 +35,24 @@ export interface ServiceHealth {
 export enum SupermarketChain {
     SHUFERSAL = 'SHUFERSAL',
     HAZI_HINAM = 'HAZI_HINAM',
-    // Add more chains here as needed
-    // RAMI_LEVY = 'RAMI_LEVY',
-    // VICTORY = 'VICTORY',
-    // YOCHANANOF = 'YOCHANANOF',
+    RAMI_LEVY = 'RAMI_LEVY',
+    VICTORY = 'VICTORY',
+    YOCHANANOF = 'YOCHANANOF',
+    TIV_TAAM = 'TIV_TAAM',
 }
 
+
+const supportedChainsMapping: Map<SupermarketChain, boolean> = new Map([
+    [SupermarketChain.SHUFERSAL, false],
+    [SupermarketChain.HAZI_HINAM, false],
+    [SupermarketChain.RAMI_LEVY, true],
+    [SupermarketChain.VICTORY, false],
+    [SupermarketChain.YOCHANANOF, false],
+    [SupermarketChain.TIV_TAAM, false],
+]);
 export function getSupportedChains(): SupermarketChain[] {
-    return Object.values(SupermarketChain);
+    // get all keys from the map that have a value of true
+    return Array.from(supportedChainsMapping.keys()).filter(chain => supportedChainsMapping.get(chain));
 }
 /**
  * Available file types for extraction
@@ -66,25 +76,23 @@ export class DataAccessService {
     private readonly logger = new Logger(DataAccessService.name);
     private readonly apiClient: AxiosInstance;
     private readonly baseUrl: string;
+    private readonly timeout: number;
 
     constructor(private readonly configService: ConfigService) {
-        // Initialize API client
-        // The URL should not contain "http:@" - fixing any potential format issues
         this.baseUrl = this.configService.get<string>('SUPERMARKET_API_BASE_URL') || 'http://erlichsefi.ddns.net:8080';
+        this.timeout = this.configService.get<number>('SUPERMARKET_API_TIMEOUT') || 30000; // 30 seconds default
         const apiToken = this.configService.get<string>('SUPERMARKET_API_TOKEN');
 
-        this.logger.log(`Initializing API client with base URL: ${this.baseUrl}`);
-
-        // Create authenticated API client
         this.apiClient = axios.create({
             baseURL: this.baseUrl,
+            timeout: this.timeout,
             headers: {
                 'Authorization': apiToken ? `Bearer ${apiToken}` : '',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
             },
-            timeout: 10000
         });
     }
+    // TODO: consider removing this method - not used anywhere
     /**
      * Check the health of the supermarket data service
      */
@@ -114,11 +122,21 @@ export class DataAccessService {
             this.logger.log(`Found ${chains.length} available chains`);
             return chains;
         } catch (error) {
-            const errorMsg = axios.isAxiosError(error)
-                ? `Failed to fetch chains: ${error.message} (${error.code}), status: ${error.response?.status}`
-                : `Failed to fetch chains: ${error.message}`;
-            this.logger.error(errorMsg);
-            return [];
+            if (axios.isAxiosError(error)) {
+                const axiosError = error as AxiosError;
+                const errorMsg = `Failed to fetch chains: ${axiosError.message} (${axiosError.code}), status: ${axiosError.response?.status}`;
+                this.logger.error(errorMsg);
+
+                if (axiosError.code === 'ECONNABORTED') {
+                    throw new Error(`Request timed out after ${this.timeout}ms while fetching available chains`);
+                }
+
+                if (axiosError.response?.status === 404) {
+                    throw new Error(`Chains endpoint not found at ${this.baseUrl}/list_chains`);
+                }
+            }
+
+            throw new Error(`Failed to fetch chains: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 
@@ -161,11 +179,21 @@ export class DataAccessService {
             this.logger.log(`Retrieved ${response.data.rows.length} rows from file ${fileName}`);
             return response.data.rows;
         } catch (error) {
-            const errorMsg = axios.isAxiosError(error)
-                ? `Failed to fetch file content: ${error.message} (${error.code}), status: ${error.response?.status}`
-                : `Failed to fetch file content: ${error.message}`;
-            this.logger.error(errorMsg);
-            return [];
+            if (axios.isAxiosError(error)) {
+                const axiosError = error as AxiosError;
+                const errorMsg = `Failed to fetch file content: ${axiosError.message} (${axiosError.code}), status: ${axiosError.response?.status}`;
+                this.logger.error(errorMsg);
+
+                if (axiosError.code === 'ECONNABORTED') {
+                    throw new Error(`Request timed out after ${this.timeout}ms while fetching ${fileName} from ${chain}`);
+                }
+
+                if (axiosError.response?.status === 404) {
+                    throw new Error(`File ${fileName} not found for chain ${chain}`);
+                }
+            }
+
+            throw new Error(`Failed to fetch file content: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 
